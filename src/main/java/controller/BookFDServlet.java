@@ -3,7 +3,8 @@ package controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.sql.Date;
+//import java.sql.Date;
+import java.sql.Timestamp;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -28,7 +29,13 @@ public class BookFDServlet extends HttpServlet {
         String yearsStr = request.getParameter("years");
         String interestRateStr = request.getParameter("interestRate");
         String amountStr = request.getParameter("amount");
-
+        
+     // Why "testMode" is read this way: an unchecked HTML checkbox sends
+        // NO parameter at all (not "false" — nothing), so getParameter()
+        // returns null. We treat "the checkbox value equals 'on'" as true,
+        // and null/anything else as false.
+        boolean testMode = "on".equals(request.getParameter("testMode"));
+        
         HttpSession session = request.getSession();
         Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
@@ -58,13 +65,19 @@ public class BookFDServlet extends HttpServlet {
         // never be user-editable — the FD is booked at whatever moment this
         // servlet runs, not at a date someone could otherwise fake to be
         // earlier or later.
-        fd.setBookDate(Date.valueOf(java.time.LocalDate.now()));
-
+        // fd.setBookDate(Date.valueOf(java.time.LocalDate.now()));
+        fd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+        
         FixedDepositDao dao = new FixedDepositDao();
-        boolean success = dao.bookFD(fd);
+        boolean success = dao.bookFD(fd, testMode);
 
         if (success) {
             out.println("<h3>Fixed Deposit booked successfully!</h3>");
+            if (testMode) {
+                out.println("<p><em>Test mode: this FD will mature in "
+                           + yearsStr + " minute(s) instead of years. "
+                           + "Check your account balance again after that time.</em></p>");
+            }
         } else {
             out.println("<h3>FD booking failed. Check the account number and available balance.</h3>");
         }

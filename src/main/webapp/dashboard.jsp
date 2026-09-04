@@ -25,6 +25,8 @@
         <li><a href="transfer.jsp">Fund Transfer</a></li>
         <li><a href="transactions.jsp">Transaction History</a></li>
         <li><a href="fd.jsp">Fixed Deposit</a></li>
+        <li><a href="myFDs.jsp">My Fixed Deposits</a></li>
+        <li><a href="prematureWithdrawFD.jsp">Withdraw FD Early</a></li>
         <li><a href="profile.jsp">My Profile</a></li>
         <li><a href="logout">Logout</a></li>
     </ul>

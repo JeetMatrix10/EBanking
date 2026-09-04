@@ -1,7 +1,8 @@
 package model;
 
 import java.math.BigDecimal;
-import java.sql.Date;
+// import java.sql.Date;      // <-- Old code commented out
+import java.sql.Timestamp;    // <-- New replacement
 
 public class FixedDeposit {
     private int fdId;
@@ -10,8 +11,13 @@ public class FixedDeposit {
     private BigDecimal amount;
     private int noOfYears;
     private BigDecimal interestRate;
-    private Date bookDate;
-    private Date maturityDate;
+    
+    // private Date bookDate;      // <-- Old code commented out
+    private Timestamp bookDate;    // <-- New replacement
+    
+    // private Date maturityDate;  // <-- Old code commented out
+    private Timestamp maturityDate;// <-- New replacement
+    
     private String status;
 
     public FixedDeposit() {
@@ -65,19 +71,31 @@ public class FixedDeposit {
         this.interestRate = interestRate;
     }
 
-    public Date getBookDate() {
+    // public Date getBookDate() {  // <-- Old code commented out
+    //     return bookDate;
+    // }
+    public Timestamp getBookDate() {
         return bookDate;
     }
 
-    public void setBookDate(Date bookDate) {
+    // public void setBookDate(Date bookDate) { // <-- Old code commented out
+    //     this.bookDate = bookDate;
+    // }
+    public void setBookDate(Timestamp bookDate) {
         this.bookDate = bookDate;
     }
 
-    public Date getMaturityDate() {
+    // public Date getMaturityDate() { // <-- Old code commented out
+    //     return maturityDate;
+    // }
+    public Timestamp getMaturityDate() {
         return maturityDate;
     }
 
-    public void setMaturityDate(Date maturityDate) {
+    // public void setMaturityDate(Date maturityDate) { // <-- Old code commented out
+    //     this.maturityDate = maturityDate;
+    // }
+    public void setMaturityDate(Timestamp maturityDate) {
         this.maturityDate = maturityDate;
     }
 

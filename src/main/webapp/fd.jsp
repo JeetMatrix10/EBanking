@@ -19,6 +19,11 @@
 
         <label>Amount:</label><br>
         <input type="number" step="0.01" min="0.01" name="amount" required><br><br>
+        
+        <label>
+            <input type="checkbox" name="testMode">
+            Test mode (treat "Number of Years" as minutes, for demo purposes)
+        </label><br><br>
 
         <input type="submit" value="Book FD">
     </form>
