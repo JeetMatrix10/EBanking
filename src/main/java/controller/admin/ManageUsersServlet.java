@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import dao.CustomerDao;
-
+import model.Customer; // Required to fetch existing customer
 @WebServlet("/manageCustomer")
 public class ManageUsersServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -33,11 +33,20 @@ public class ManageUsersServlet extends HttpServlet {
             String phone = request.getParameter("phone");
             String email = request.getParameter("email");
 
-            boolean success = dao.updateCustomer(cid, phone, email);
-            if (success) {
-                out.println("<h3>Customer updated successfully.</h3>");
+            // Fetch the existing customer so we don't lose their current password.
+            // Our updated DAO requires 4 parameters now, including the password.
+            Customer existingCustomer = dao.getCustomerByCid(cid);
+
+            if (existingCustomer != null) {
+                // Pass the existing password right back into the update method
+                boolean success = dao.updateCustomer(cid, phone, email, existingCustomer.getPassword());
+                if (success) {
+                    out.println("<h3>Customer updated successfully.</h3>");
+                } else {
+                    out.println("<h3>Update failed. Please try again.</h3>");
+                }
             } else {
-                out.println("<h3>Update failed. Check the Customer ID.</h3>");
+                out.println("<h3>Update failed. Customer ID not found.</h3>");
             }
 
         } else if ("delete".equals(action)) {

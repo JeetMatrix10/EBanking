@@ -50,26 +50,42 @@ public class ProfileServlet extends HttpServlet {
 
         String phone = request.getParameter("phone");
         String email = request.getParameter("email");
+        String newPassword = request.getParameter("password");
 
+        // Determine which password to save based on what the user submitted
+        String finalPassword;
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            finalPassword = loggedInCustomer.getPassword(); // Keep old password
+        } else {
+            finalPassword = newPassword.trim(); // Use new password
+        }
         // Why we ONLY ever use loggedInCustomer.getCid() here, never a cid
         // from request.getParameter(...): this is the same ownership
         // principle as before — even if someone tampered with a hidden form
         // field to submit a different cid, we ignore it completely and only
         // ever update the account actually tied to this session.
         CustomerDao dao = new CustomerDao();
-        boolean success = dao.updateCustomer(loggedInCustomer.getCid(), phone, email);
+        boolean success = dao.updateCustomer(loggedInCustomer.getCid(), phone, email, finalPassword);
 
         // Why we also update the SESSION's copy after a successful save: if
         // we didn't, the session would keep showing the OLD phone/email
         // elsewhere (e.g. if dashboard.jsp ever displays it) until the next
         // login, even though the database is already correct.
         if (success) {
+            // Update the session object so the dashboard doesn't show stale data
             loggedInCustomer.setPhone(phone);
             loggedInCustomer.setEmail(email);
+            loggedInCustomer.setPassword(finalPassword);
             session.setAttribute("loggedInCustomer", loggedInCustomer);
+            
+            request.setAttribute("updateSuccess", true);
+        } else {
+            request.setAttribute("updateSuccess", false);
         }
 
-        request.setAttribute("updateSuccess", success);
-        doGet(request, response); // reload the page with fresh data
+        // Re-attach customer to request and forward back to profile.jsp
+        request.setAttribute("customer", loggedInCustomer);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("profile.jsp");
+        dispatcher.forward(request, response);
     }
 }

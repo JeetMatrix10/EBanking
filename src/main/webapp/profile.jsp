@@ -67,9 +67,35 @@
         <label>Email:</label><br>
         <input type="email" name="email" value="<%= customer.getEmail() %>" required><br><br>
 
+        <!-- New Toggle Option -->
+        <input type="checkbox" id="changePwdToggle" onclick="togglePasswordSection()">
+        <label for="changePwdToggle">Change Password</label><br><br>
+
+        <!-- Hidden Password Section -->
+        <div id="passwordSection" style="display: none;">
+            <label>New Password:</label><br>
+            <input type="password" name="password" id="newPasswordInput"><br><br>
+        </div>
+
         <input type="submit" value="Update Profile">
     </form>
 
     <p><a href="dashboard.jsp">Back to Dashboard</a></p>
+
+    <!-- JavaScript to handle the toggle -->
+    <script>
+        function togglePasswordSection() {
+            var toggle = document.getElementById("changePwdToggle");
+            var section = document.getElementById("passwordSection");
+            var input = document.getElementById("newPasswordInput");
+
+            if (toggle.checked) {
+                section.style.display = "block"; // Show the field
+            } else {
+                section.style.display = "none";  // Hide the field
+                input.value = "";               // Clear any typed password
+            }
+        }
+    </script>
 </body>
 </html>

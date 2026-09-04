@@ -78,7 +78,7 @@ public class CustomerDao {
     }
 
     public Customer validateLogin(String identifier, String password) {
-        String sql = "SELECT * FROM customer WHERE cid = ? OR email = ? AND password = ?";
+        String sql = "SELECT * FROM customer WHERE (cid = ? OR email = ?) AND password = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -138,15 +138,16 @@ public class CustomerDao {
  // name, PAN, and Aadhaar are identity/KYC documents — real banks don't let
  // these be casually edited without a formal re-verification process, so we
  // deliberately don't expose them here.
- public boolean updateCustomer(String cid, String phone, String email) {
-     String sql = "UPDATE customer SET phone = ?, email = ? WHERE cid = ?";
+ public boolean updateCustomer(String cid, String phone, String email, String password) {
+     String sql = "UPDATE customer SET phone = ?, email = ?, password = ? WHERE cid = ?";
 
      try (Connection conn = ConnectionFactory.getConnection();
           PreparedStatement ps = conn.prepareStatement(sql)) {
 
          ps.setString(1, phone);
          ps.setString(2, email);
-         ps.setString(3, cid);
+         ps.setString(3, password);
+         ps.setString(4, cid);
 
          int rowsUpdated = ps.executeUpdate();
          return rowsUpdated > 0;
