@@ -115,7 +115,7 @@ public class FixedDepositDao {
             // touching the interest calculation logic at all.
             // LocalDate maturityLocalDate = bookLocalDate.plusYears(fd.getNoOfYears());
             LocalDateTime maturityDateTime = testMode
-                    ? bookDateTime.plusMinutes(fd.getNoOfYears())
+                    ? bookDateTime.plusMinutes((long) fd.getNoOfYears() * 5)
                     : bookDateTime.plusYears(fd.getNoOfYears());
             // Date maturityDate = Date.valueOf(maturityLocalDate);
             Timestamp maturityTimestamp = Timestamp.valueOf(maturityDateTime);

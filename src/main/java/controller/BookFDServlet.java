@@ -74,8 +74,10 @@ public class BookFDServlet extends HttpServlet {
         if (success) {
             out.println("<h3>Fixed Deposit booked successfully!</h3>");
             if (testMode) {
+            	// Calculate the actual wait time for the user message
+            	int testMinutesWait=Integer.parseInt(yearsStr)*5;
                 out.println("<p><em>Test mode: this FD will mature in "
-                           + yearsStr + " minute(s) instead of years. "
+                           + testMinutesWait + " minute(s) instead of years. "
                            + "Check your account balance again after that time.</em></p>");
             }
         } else {

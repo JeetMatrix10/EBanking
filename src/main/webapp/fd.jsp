@@ -22,7 +22,7 @@
         
         <label>
             <input type="checkbox" name="testMode">
-            Test mode (treat "Number of Years" as minutes, for demo purposes)
+            Test mode (treat 1 Year as 5 minutes, for demo purposes)
         </label><br><br>
 
         <input type="submit" value="Book FD">
