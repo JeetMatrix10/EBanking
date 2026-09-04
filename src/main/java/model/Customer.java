@@ -1,0 +1,88 @@
+package model;
+
+public class Customer {
+    private String cid;
+    private String name;
+    private String phone;
+    private String email;
+    private String panno;
+    private String aadhaarno;
+    private String password;
+
+    // Why a no-argument constructor: JDBC/DAO code will often create an empty
+    // Customer object first, then fill in fields one by one from a ResultSet row.
+    public Customer() {
+    }
+
+    // Why an all-fields constructor too: convenient when you already have every
+    // value at once, e.g. when a RegisterServlet reads form fields and builds a Customer.
+    public Customer(String name, String phone, String email,
+                     String panno, String aadhaarno, String password) {
+        
+        this.name = name;
+        this.phone = phone;
+        this.email = email;
+        this.panno = panno;
+        this.aadhaarno = aadhaarno;
+        this.password = password;
+    }
+
+    // Getters and setters — why these matter: fields are private (encapsulation),
+    // so DAO/Servlet code can't touch them directly. This forces all access through
+    // controlled methods, which is standard Java practice and expected in academic evaluation.
+    public String getCid() {
+        return cid;
+    }
+
+    public void setCid(String cid) {
+        this.cid = cid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPanno() {
+        return panno;
+    }
+
+    public void setPanno(String panno) {
+        this.panno = panno;
+    }
+
+    public String getAadhaarno() {
+        return aadhaarno;
+    }
+
+    public void setAadhaarno(String aadhaarno) {
+        this.aadhaarno = aadhaarno;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}
