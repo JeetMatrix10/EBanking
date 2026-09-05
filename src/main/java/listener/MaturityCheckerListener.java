@@ -9,41 +9,39 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
 import dao.FixedDepositDao;
+import dao.RecurringDepositDao;
 
-// Why @WebListener instead of registering this in web.xml: same reasoning
-// as @WebServlet earlier — annotation-based registration keeps everything
-// in one file instead of split across Java code and XML config.
 @WebListener
 public class MaturityCheckerListener implements ServletContextListener {
 
     private ScheduledExecutorService scheduler;
 
-    // Why contextInitialized: this method runs ONCE, automatically, the
-    // moment Tomcat finishes starting your app — exactly where "start a
-    // background job that runs for as long as the server is up" belongs.
     public void contextInitialized(ServletContextEvent sce) {
         scheduler = Executors.newSingleThreadScheduledExecutor();
 
-        FixedDepositDao dao = new FixedDepositDao();
+        // Why both DAOs are declared here, BEFORE the scheduler block below:
+        // Java requires a variable to exist before any code can reference it —
+        // declaring both up front also makes it clear at a glance that this
+        // one background job handles two separate responsibilities (FD and RD).
+        FixedDepositDao fdDao = new FixedDepositDao();
+        RecurringDepositDao rdDao = new RecurringDepositDao();
 
-        // Why scheduleAtFixedRate with a 30-second interval: frequent enough
-        // that in test mode (minutes-based maturity) you'll see it credit
-        // within half a minute of watching, but not so frequent that it
-        // hammers the database pointlessly when running for real (years-based).
+        // Why ONE scheduleAtFixedRate call handling both, not two separate
+        // calls: this is a single background job that checks two things
+        // every cycle — running two independent schedulers would mean two
+        // separate threads doing overlapping, uncoordinated work for no benefit.
         scheduler.scheduleAtFixedRate(() -> {
-            dao.processMaturedDeposits();
+            fdDao.processMaturedDeposits();
+            rdDao.processDueInstallments(true); // true = test mode timing active project-wide
         }, 0, 30, TimeUnit.SECONDS);
 
-        System.out.println("FD Maturity Checker started — running every 30 seconds.");
+        System.out.println("FD/RD Maturity Checker started — running every 30 seconds.");
     }
 
-    // Why contextDestroyed matters: without explicitly shutting down the
-    // scheduler when the app stops, the background thread could keep
-    // running or leak resources even after you redeploy/restart in Eclipse.
     public void contextDestroyed(ServletContextEvent sce) {
         if (scheduler != null) {
             scheduler.shutdown();
         }
-        System.out.println("FD Maturity Checker stopped.");
+        System.out.println("FD/RD Maturity Checker stopped.");
     }
 }
