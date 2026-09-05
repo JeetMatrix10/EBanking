@@ -8,11 +8,44 @@ import java.sql.SQLException;
 
 import java.math.BigDecimal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import model.Account;
 import utilities.ConnectionFactory;
 
 public class AccountDao {
 
+	// Why this returns a List<Account>, not just account numbers as Strings:
+	// the dropdown will likely want to show more than just the number later
+	// (e.g. "ACC00001 - Saving" instead of a bare number) — returning full
+	// Account objects keeps that option open without refetching later.
+	public List<Account> getAccountsByCid(String cid) {
+	    String sql = "SELECT * FROM account WHERE cid = ?";
+	    List<Account> accounts = new ArrayList<>();
+
+	    try (Connection conn = ConnectionFactory.getConnection();
+	         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+	        ps.setString(1, cid);
+	        ResultSet rs = ps.executeQuery();
+
+	        while (rs.next()) {
+	            Account account = new Account();
+	            account.setAccno(rs.getString("accno"));
+	            account.setCid(rs.getString("cid"));
+	            account.setOpendate(rs.getDate("opendate"));
+	            account.setBalance(rs.getBigDecimal("balance"));
+	            account.setAccounttype(rs.getString("accounttype"));
+	            accounts.add(account);
+	        }
+
+	    } catch (SQLException e) {
+	        System.out.println("Error fetching accounts: " + e.getMessage());
+	    }
+
+	    return accounts;
+	}
 	// Why we take the OLD balance first, calculate the difference, and log it
 	// as a transaction: this preserves the audit trail principle from
 	// deposit/withdraw — even an admin's manual correction should leave a

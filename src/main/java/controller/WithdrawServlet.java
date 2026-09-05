@@ -3,8 +3,10 @@ package controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.util.List;
 
 import javax.servlet.ServletException;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,11 +17,27 @@ import dao.AccountDao;
 import dao.TransactionDao;
 import exception.InsufficientBalanceException;
 import model.Customer;
+import model.Account;
 
 @WebServlet("/withdraw")
 public class WithdrawServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+
+        AccountDao accountDao = new AccountDao();
+        List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
+
+        request.setAttribute("accounts", accounts);
+
+        RequestDispatcher dispatcher = request.getRequestDispatcher("withdraw.jsp");
+        dispatcher.forward(request, response);
+    }
+    
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 

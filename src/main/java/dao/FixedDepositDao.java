@@ -19,6 +19,42 @@ import utilities.ConnectionFactory;
 
 public class FixedDepositDao {
 
+	// Why a separate method from getFDsByCid(), which returns ALL FDs
+	// regardless of status: the premature-withdrawal dropdown should only ever
+	// show FDs that CAN actually be withdrawn early — showing an already
+	// MATURED or CLOSED_PREMATURE one would let someone select something that
+	// can't be acted on, leading to a confusing "failed" message instead of
+	// simply not offering it as an option.
+	public List<FixedDeposit> getActiveFDsByCid(String cid) {
+	    String sql = "SELECT * FROM fixed_deposit WHERE cid = ? AND status = 'ACTIVE' ORDER BY book_date DESC";
+	    List<FixedDeposit> fds = new ArrayList<>();
+
+	    try (Connection conn = ConnectionFactory.getConnection();
+	         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+	        ps.setString(1, cid);
+	        ResultSet rs = ps.executeQuery();
+
+	        while (rs.next()) {
+	            FixedDeposit fd = new FixedDeposit();
+	            fd.setFdId(rs.getInt("fd_id"));
+	            fd.setCid(rs.getString("cid"));
+	            fd.setAccno(rs.getString("accno"));
+	            fd.setAmount(rs.getBigDecimal("amount"));
+	            fd.setNoOfYears(rs.getInt("no_of_years"));
+	            fd.setInterestRate(rs.getBigDecimal("interest_rate"));
+	            fd.setBookDate(rs.getTimestamp("book_date"));
+	            fd.setMaturityDate(rs.getTimestamp("maturity_date"));
+	            fd.setStatus(rs.getString("status"));
+	            fds.add(fd);
+	        }
+
+	    } catch (SQLException e) {
+	        System.out.println("Error fetching active FDs: " + e.getMessage());
+	    }
+
+	    return fds;
+	}
 	// Why this queries by cid, not accno: a customer might have FDs across
 	// multiple accounts (since one customer can hold multiple accounts, as you
 	// pointed out earlier) — querying by cid shows ALL of them in one list,

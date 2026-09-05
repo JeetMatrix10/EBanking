@@ -1,4 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="model.FixedDeposit" %>
+<%
+    List<FixedDeposit> activeFDs = (List<FixedDeposit>) request.getAttribute("activeFDs");
+    if (activeFDs == null) {
+        response.sendRedirect("prematureWithdrawFD");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,12 +19,15 @@
        calculated only for the actual time held, not the full term.</em></p>
 
     <form action="prematureWithdrawFD" method="post">
-        <label>FD ID:</label><br>
-        <input type="number" name="fdId" required><br><br>
-
-        <label>Account Number (to credit):</label><br>
-        <input type="text" name="accno" required><br><br>
-
+        <label>Select Fixed Deposit:</label><br>
+            <select name="fdId" required>
+                <% for (FixedDeposit fd : activeFDs) { %>
+                    <option value="<%= fd.getFdId() %>">
+                        FD #<%= fd.getFdId() %> — Account <%= fd.getAccno() %> — Amount: <%= fd.getAmount() %> — Rate: <%= fd.getInterestRate() %>%
+                    </option>
+                <% } %>
+            </select><br><br>
+            
         <input type="submit" value="Withdraw Early">
     </form>
 

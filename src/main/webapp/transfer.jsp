@@ -1,4 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Account" %>
+<%
+    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    if (accounts == null) {
+        response.sendRedirect("transfer");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,8 +19,14 @@
 
     <form action="transfer" method="post">
         <label>Your Account Number (SACCNO):</label><br>
-        <input type="text" name="saccno" required><br><br>
-
+        <select name="saccno" required>
+            <% for (Account acc : accounts) { %>
+                <option value="<%= acc.getAccno() %>">
+                    <%= acc.getAccno() %> (<%= acc.getAccounttype() %> - Balance: <%= acc.getBalance() %>)
+                </option>
+            <% } %>
+        </select><br><br>
+        
         <label>Beneficiary Account Number:</label><br>
         <input type="text" name="benaccno" required><br><br>
 

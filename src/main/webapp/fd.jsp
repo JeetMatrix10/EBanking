@@ -1,4 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Account" %>
+<%
+    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    if (accounts == null) {
+        response.sendRedirect("bookFD");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,8 +18,14 @@
 
     <form action="bookFD" method="post">
         <label>Account Number:</label><br>
-        <input type="text" name="accno" required><br><br>
-
+        <select name="accno" required>
+            <% for (Account acc : accounts) { %>
+                <option value="<%= acc.getAccno() %>">
+                    <%= acc.getAccno() %> (<%= acc.getAccounttype() %> - Balance: <%= acc.getBalance() %>)
+                </option>
+            <% } %>
+        </select><br><br>
+        
         <label>Number of Years:</label><br>
         <input type="number" name="years" min="1" required><br><br>
 

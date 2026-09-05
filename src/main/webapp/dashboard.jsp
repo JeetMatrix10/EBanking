@@ -1,6 +1,9 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="model.Customer" %>
 <%@ page import="model.Account" %>
+<%@ page import="dao.AccountDao" %>
+<%@ page import="java.util.List" %>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,31 +16,47 @@
     // AuthFilter already guarantees this page is never reached unless
     // loggedInCustomer exists in the session — so by the time this code
     // runs, we can safely assume it's there.
+    
     Customer customer = (Customer) session.getAttribute("loggedInCustomer");
-%>
+
+    // Why this fetch happens directly in the JSP here, unlike deposit/withdraw/FD:
+    // dashboard.jsp is reached straight after login (via sendRedirect), with
+    // no servlet doGet() step forwarding to it first — adding one just for
+    // this dropdown would mean rewriting the login flow. Keeping this one
+    // inline lookup is a reasonable, contained exception, consistent with
+    // dashboard.jsp already doing similar inline lookups elsewhere on this page.
+    AccountDao dashboardAccountDao = new AccountDao();
+    List<Account> myAccounts = dashboardAccountDao.getAccountsByCid(customer.getCid());
+	%>
 
     <h2>Welcome, <%= customer.getName() %></h2>
     <p>Customer ID: <%= customer.getCid() %></p>
 
     <ul>
-        <li><a href="deposit.jsp">Deposit</a></li>
-        <li><a href="withdraw.jsp">Withdraw</a></li>
-        <li><a href="transfer.jsp">Fund Transfer</a></li>
-        <li><a href="transactions.jsp">Transaction History</a></li>
-        <li><a href="fd.jsp">Fixed Deposit</a></li>
-        <li><a href="myFDs.jsp">My Fixed Deposits</a></li>
-        <li><a href="prematureWithdrawFD.jsp">Withdraw FD Early</a></li>
-        <li><a href="recurring.jsp">Recurring Deposit</a></li>
-        <li><a href="myRDs">My Recurring Deposits</a></li>
-        <li><a href="profile.jsp">My Profile</a></li>
-        <li><a href="logout">Logout</a></li>
+		<li><a href="deposit">Deposit</a></li>
+    	<li><a href="withdraw">Withdraw</a></li>
+    	<li><a href="transfer">Fund Transfer</a></li>
+    	<li><a href="viewTransactions">Transaction History</a></li>
+    	
+    	<li><a href="bookFD">Fixed Deposit</a></li>
+    	<li><a href="myFDs">My Fixed Deposits</a></li>
+    	<li><a href="bookRD">Recurring Deposit</a></li>
+    	<li><a href="myRDs">My Recurring Deposits</a></li>
+    	<li><a href="profile">My Profile</a></li>
+    	<li><a href="logout">Logout</a></li>    
     </ul>
 
 	<hr>
 	<h3>Check Account Balance</h3>
 	<form action="checkBalance" method="get">
     	<label>Account Number:</label>
-    	<input type="text" name="accno" required>
+    	<select name="accno" required>
+        <% for (Account acc : myAccounts) { %>
+            <option value="<%= acc.getAccno() %>">
+                <%= acc.getAccno() %> (<%= acc.getAccounttype() %>)
+            </option>
+        <% } %>
+    	</select>
     	<input type="submit" value="Check Balance">
 	</form>
 

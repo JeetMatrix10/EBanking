@@ -1,6 +1,15 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
+<%@ page import="model.Account" %>
 <%@ page import="model.Transaction" %>
+<%
+    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    if (accounts == null) {
+        response.sendRedirect("viewTransactions");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,7 +20,13 @@
 
     <form action="viewTransactions" method="get">
         <label>Account Number:</label>
-        <input type="text" name="accno" required>
+        <select name="accno" required>
+            <% for (Account acc : accounts) { %>
+                <option value="<%= acc.getAccno() %>">
+                    <%= acc.getAccno() %> (<%= acc.getAccounttype() %>)
+                </option>
+            <% } %>
+        </select>
         <input type="submit" value="View">
     </form>
 

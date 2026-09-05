@@ -50,7 +50,7 @@
         </table>
     <% } %>
 
-    <p><a href="prematureWithdrawFD.jsp">Withdraw an FD Early</a></p>
+    <p><a href="prematureWithdrawFD">Withdraw an FD Early</a></p>
     <p><a href="dashboard.jsp">Back to Dashboard</a></p>
 </body>
 </html>

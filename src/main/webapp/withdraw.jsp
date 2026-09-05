@@ -1,5 +1,14 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
+
+<%@ page import="java.util.List" %>
+<%@ page import="model.Account" %>
+<%
+    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    if (accounts == null) {
+        response.sendRedirect("withdraw");
+        return;
+    }
+%><!DOCTYPE html>
 <html>
 <head>
     <title>Withdraw - EBanking</title>
@@ -9,8 +18,14 @@
 
     <form action="withdraw" method="post">
         <label>Account Number:</label><br>
-        <input type="text" name="accno" required><br><br>
-
+        <select name="accno" required>
+            <% for (Account acc : accounts) { %>
+                <option value="<%= acc.getAccno() %>">
+                    <%= acc.getAccno() %> (<%= acc.getAccounttype() %> - Balance: <%= acc.getBalance() %>)
+                </option>
+            <% } %>
+        </select><br><br>
+        
         <label>Amount:</label><br>
         <input type="number" step="0.01" min="0.01" name="amount" required><br><br>
 
