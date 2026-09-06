@@ -14,12 +14,19 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(String saccno, String benaccno, BigDecimal amount, String type) {
-        this.saccno = saccno;
-        this.benaccno = benaccno;
-        this.amount = amount;
-        this.type = type;
-    }
+    // Why only a no-arg constructor exists: every Transaction object in this
+    // project is built by reading an existing database row (see
+    // TransactionDao.getTransactionsByAccno()), field by field via setters —
+    // never constructed fresh with all values at once before an insert. All
+    // inserts happen via direct SQL parameters instead, bypassing this class
+    // entirely, which is why an all-args constructor is unnecessary here.
+
+//    public Transaction(String saccno, String benaccno, BigDecimal amount, String type) {
+//        this.saccno = saccno;
+//        this.benaccno = benaccno;
+//        this.amount = amount;
+//        this.type = type;
+//    }
 
     public int getTransactionId() {
         return transactionId;
