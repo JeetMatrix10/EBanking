@@ -36,11 +36,22 @@ public class AccountServlet extends HttpServlet {
 		// Why we check ownership BEFORE fetching/displaying anything: this is
 		// the actual security boundary — no account data for accno should
 		// ever reach the response unless it belongs to whoever is logged in.
-		if (dao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-			Account account = dao.getAccountByAccno(accno);
-			request.setAttribute("account", account);
-		} else {
-			request.setAttribute("accessDenied", true);
+
+		// Why this is now wrapped in "if (accno != null)", matching the fix
+		// already applied to TransactionServlet: without this guard, a
+		// request reaching this servlet with NO accno parameter (direct
+		// navigation, stale bookmark, etc.) would incorrectly report
+		// "access denied" instead of simply having nothing to check yet —
+		// isAccountOwnedByCustomer(null, cid) always returns false, which
+		// is technically correct but MISLEADING as a user-facing message
+		// when nothing was actually requested.
+		if (accno != null) {
+			if (dao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+				Account account = dao.getAccountByAccno(accno);
+				request.setAttribute("account", account);
+			} else {
+				request.setAttribute("accessDenied", true);
+			}
 		}
 
 		RequestDispatcher dispatcher = request.getRequestDispatcher("dashboard.jsp");
