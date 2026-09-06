@@ -3,6 +3,7 @@ package controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -52,16 +53,27 @@ public class RegisterServlet extends HttpServlet {
 		// the whole flow works end-to-end before we build a polished
 		// success/failure JSP page. We'll replace this with proper page
 		// forwarding once the core flow is proven.
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
+//		response.setContentType("text/html");
+//		PrintWriter out = response.getWriter();
+//
+//		if (generatedCid != null) {
+//			out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
+//			out.println("<p>Please save this ID — you'll need it to log in.</p>");
+//			out.println("<a href='login.jsp'>Go to Login</a>");
+//		} else {
+//			out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
+//			out.println("<a href='register.jsp'>Try Again</a>");
+//		}
+		// Why this replaces the old out.println() block entirely: this
+		// servlet now follows the SAME pattern as every other servlet in
+		// the project (ProfileServlet, TransactionServlet, the dropdown
+		// servlets) — set result data as request attributes, then forward
+		// to a JSP that renders it as proper, consistent HTML, rather than
+		// hand-writing HTML strings directly in Java code.
+		request.setAttribute("success", generatedCid != null);
+		request.setAttribute("generatedCid", generatedCid);
 
-		if (generatedCid != null) {
-			out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
-			out.println("<p>Please save this ID — you'll need it to log in.</p>");
-			out.println("<a href='login.jsp'>Go to Login</a>");
-		} else {
-			out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
-			out.println("<a href='register.jsp'>Try Again</a>");
-		}
+		RequestDispatcher dispatcher = request.getRequestDispatcher("registerResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }
