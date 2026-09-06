@@ -1,7 +1,6 @@
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -32,7 +31,6 @@ public class BookRDServlet extends HttpServlet {
 
 		AccountDao accountDao = new AccountDao();
 		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
-
 		request.setAttribute("accounts", accounts);
 
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recurring.jsp");
@@ -51,15 +49,12 @@ public class BookRDServlet extends HttpServlet {
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
-
 		AccountDao accountDao = new AccountDao();
-//        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-//            out.println("<h3>Access denied. This account does not belong to you.</h3>");
-//            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-//            return;
-//        }
+		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+			request.setAttribute("success", false);
+			request.getRequestDispatcher("rdResult.jsp").forward(request, response);
+			return;
+		}
 
 		RecurringDeposit rd = new RecurringDeposit();
 		rd.setCid(loggedInCustomer.getCid());
@@ -72,14 +67,10 @@ public class BookRDServlet extends HttpServlet {
 		RecurringDepositDao dao = new RecurringDepositDao();
 		boolean success = dao.bookRD(rd, testMode);
 
-		if (success) {
-			out.println("<h3>Recurring Deposit booked successfully!</h3>");
-			if (testMode) {
-				out.println("<p><em>Test mode: installments debit every 5 minutes instead of monthly.</em></p>");
-			}
-		} else {
-			out.println("<h3>RD booking failed.</h3>");
-		}
-		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+		request.setAttribute("success", success);
+		request.setAttribute("testMode", testMode);
+
+		RequestDispatcher dispatcher = request.getRequestDispatcher("rdResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }

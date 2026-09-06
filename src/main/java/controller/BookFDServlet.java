@@ -1,9 +1,7 @@
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
-//import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -33,7 +31,6 @@ public class BookFDServlet extends HttpServlet {
 
 		AccountDao accountDao = new AccountDao();
 		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
-
 		request.setAttribute("accounts", accounts);
 
 		RequestDispatcher dispatcher = request.getRequestDispatcher("fd.jsp");
@@ -57,19 +54,17 @@ public class BookFDServlet extends HttpServlet {
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
+		AccountDao accountDao = new AccountDao();
 
 		// Why the SAME ownership check from deposit/withdraw is repeated
 		// here: FD booking deducts money from an account, same risk profile
 		// as deposit/withdraw — anyone touching a real account's balance
 		// needs this guard, no exceptions.
-		AccountDao accountDao = new AccountDao();
-//        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-//            out.println("<h3>Access denied. This account does not belong to you.</h3>");
-//            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-//            return;
-//        }
+		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+			request.setAttribute("success", false);
+			request.getRequestDispatcher("fdResult.jsp").forward(request, response);
+			return;
+		}
 
 		FixedDeposit fd = new FixedDeposit();
 		fd.setCid(loggedInCustomer.getCid());
@@ -89,19 +84,12 @@ public class BookFDServlet extends HttpServlet {
 		FixedDepositDao dao = new FixedDepositDao();
 		boolean success = dao.bookFD(fd, testMode);
 
-		if (success) {
-			out.println("<h3>Fixed Deposit booked successfully!</h3>");
-			if (testMode) {
-				// Calculate the actual wait time for the user message
-				int testMinutesWait = Integer.parseInt(yearsStr) * 5;
-				out.println(
-						"<p><em>Test mode: this FD will mature in " + testMinutesWait + " minute(s) instead of years. "
-								+ "Check your account balance again after that time.</em></p>");
-			}
-		} else {
-//            out.println("<h3>FD booking failed. Check the account number and available balance.</h3>");
-			out.println("<h3>FD booking failed. Check available balance.</h3>");
+		request.setAttribute("success", success);
+		if (success && testMode) {
+			request.setAttribute("testMinutesWait", Integer.parseInt(yearsStr) * 5);
 		}
-		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+
+		RequestDispatcher dispatcher = request.getRequestDispatcher("fdResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }
