@@ -1,10 +1,10 @@
 package controller.admin;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.Date;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -37,15 +37,10 @@ public class AddAccountServlet extends HttpServlet {
 		AccountDao dao = new AccountDao();
 		String generatedAccno = dao.addAccount(account);
 
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
+		request.setAttribute("success", generatedAccno != null);
+		request.setAttribute("generatedAccno", generatedAccno);
 
-		if (generatedAccno != null) {
-			out.println("<h3>Account created successfully! Account No: " + generatedAccno + "</h3>");
-			out.println("<a href='adminDashboard.jsp'>Back to Dashboard</a>");
-		} else {
-			out.println("<h3>Account creation failed. Check the Customer ID exists.</h3>");
-			out.println("<a href='account.jsp'>Try Again</a>");
-		}
+		RequestDispatcher dispatcher = request.getRequestDispatcher("addAccountResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }

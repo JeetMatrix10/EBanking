@@ -1,8 +1,8 @@
 package controller.admin;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -26,9 +26,7 @@ public class ManageUsersServlet extends HttpServlet {
 		String cid = request.getParameter("cid");
 
 		CustomerDao dao = new CustomerDao();
-
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
+		String message;
 
 		if ("update".equals(action)) {
 			String phone = request.getParameter("phone");
@@ -41,13 +39,9 @@ public class ManageUsersServlet extends HttpServlet {
 			if (existingCustomer != null) {
 				// Pass the existing password right back into the update method
 				boolean success = dao.updateCustomer(cid, phone, email, existingCustomer.getPassword());
-				if (success) {
-					out.println("<h3>Customer updated successfully.</h3>");
-				} else {
-					out.println("<h3>Update failed. Please try again.</h3>");
-				}
+				message = success ? "Customer updated successfully." : "Update failed. Please try again.";
 			} else {
-				out.println("<h3>Update failed. Customer ID not found.</h3>");
+				message = "Update failed. Customer ID not found.";
 			}
 
 		} else if ("delete".equals(action)) {
@@ -55,18 +49,24 @@ public class ManageUsersServlet extends HttpServlet {
 			// gives a specific, actionable error message instead of letting
 			// the delete attempt fail with a raw database constraint error.
 			if (dao.hasActiveAccounts(cid)) {
-				out.println("<h3>Cannot delete: this customer still has active accounts. "
-						+ "Close their accounts first.</h3>");
+				message = "Cannot delete: this customer still has active accounts. Close their accounts first.";
 			} else {
 				boolean success = dao.deleteCustomer(cid);
-				if (success) {
-					out.println("<h3>Customer deleted successfully.</h3>");
-				} else {
-					out.println("<h3>Delete failed. Check the Customer ID.</h3>");
-				}
+				message = success ? "Customer deleted successfully." : "Delete failed. Check the Customer ID.";
 			}
+
+		} else {
+			// Why this branch exists, when it didn't before: the original
+			// code had NO handling for an unrecognized/missing "action"
+			// value — it would silently fall through and just print the
+			// "Back to Admin Dashboard" link with no message at all. This
+			// makes that case explicit instead of leaving a confusing blank result.
+			message = "Unknown action requested.";
 		}
 
-		out.println("<a href='adminDashboard.jsp'>Back to Admin Dashboard</a>");
+		request.setAttribute("message", message);
+
+		RequestDispatcher dispatcher = request.getRequestDispatcher("manageCustomerResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }
