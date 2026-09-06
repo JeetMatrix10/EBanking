@@ -1,7 +1,6 @@
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -31,7 +30,6 @@ public class WithdrawServlet extends HttpServlet {
 
 		AccountDao accountDao = new AccountDao();
 		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
-
 		request.setAttribute("accounts", accounts);
 
 		RequestDispatcher dispatcher = request.getRequestDispatcher("withdraw.jsp");
@@ -48,30 +46,42 @@ public class WithdrawServlet extends HttpServlet {
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
-
 		AccountDao accountDao = new AccountDao();
 
+		// if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+		// out.println("<h3>Access denied. This account does not belong to you.</h3>");
+		// out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+		// return;
+		// }
 		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-			out.println("<h3>Access denied. This account does not belong to you.</h3>");
-			out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+			request.setAttribute("success", false);
+			request.getRequestDispatcher("withdrawResult.jsp").forward(request, response);
 			return;
 		}
 
 		TransactionDao dao = new TransactionDao();
 
 		try {
+			// boolean success = dao.withdraw(accno, amount);
+			// if (success) {
+			// out.println("<h3>Withdrawal successful!</h3>");
+			// } else {
+			// out.println("<h3>Withdrawal failed. Check the account number.</h3>");
+			// }
 			boolean success = dao.withdraw(accno, amount);
-			if (success) {
-				out.println("<h3>Withdrawal successful!</h3>");
-			} else {
-				out.println("<h3>Withdrawal failed. Check the account number.</h3>");
-			}
+			request.setAttribute("success", success);
 		} catch (InsufficientBalanceException e) {
-			out.println("<h3>Withdrawal failed: " + e.getMessage() + "</h3>");
+			// out.println("<h3>Withdrawal failed: " + e.getMessage() + "</h3>");
+
+			// Why we set BOTH success=false AND errorMessage here: the JSP
+			// needs success to know a failure occurred at all, and
+			// errorMessage to know WHICH specific failure it was, so it can
+			// show the exact "Available: X" detail instead of a generic message.
+			request.setAttribute("success", false);
+			request.setAttribute("errorMessage", e.getMessage());
 		}
 
-		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+		RequestDispatcher dispatcher = request.getRequestDispatcher("withdrawResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }
