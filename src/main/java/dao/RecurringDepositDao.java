@@ -16,18 +16,24 @@ import utilities.ConnectionFactory;
 
 public class RecurringDepositDao {
 
-	// Why testMode scales months into minutes here (same ratio idea as FD's
-	// years-to-minutes, but applied to months since RD's natural unit is months):
-	// this lets the very FIRST installment debit happen quickly for demo purposes,
-	// then each SUBSEQUENT installment follow the same scaled interval.
+	// Why testMode uses a flat 5-minute interval here, rather than scaling
+	// with noOfMonths the way FD's testMode scales with noOfYears (years * 5):
+	// FD only ever needs ONE future timestamp calculated once, at booking
+	// (its single maturity_date), so scaling by the term length keeps a demo
+	// FD's total wait proportional to what was typed in. RD instead needs
+	// MANY repeated intervals (one per installment) recalculated every cycle
+	// in processDueInstallments() below — a flat, small interval (5 minutes)
+	// keeps every demo run fast regardless of how many installments were
+	// chosen, rather than a 12-month RD taking noticeably longer to fully
+	// demo than a 2-month one.
 	public boolean bookRD(RecurringDeposit rd, boolean testMode) {
 		// Why interest_rate is now part of this INSERT: the RD needs its
 		// own agreed rate stored at booking time, same principle as FD —
 		// without storing it here, there'd be no rate to use later when
 		// calculating the maturity payout.
 		String insertSql = "INSERT INTO recurring_deposit "
-				+ "(cid, accno, monthly_amount, no_of_months, interest_rate, installments_paid, book_date, next_debit_date, status) "
-				+ "VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'ACTIVE')";
+				+ "(cid, accno, monthly_amount, no_of_months, interest_rate, installments_paid, book_date, next_debit_date, status, test_mode) "
+				+ "VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'ACTIVE', ?)";
 
 		try (Connection conn = ConnectionFactory.getConnection()) {
 
@@ -47,6 +53,14 @@ public class RecurringDepositDao {
 				ps.setBigDecimal(5, rd.getInterestRate());
 				ps.setTimestamp(6, rd.getBookDate());
 				ps.setTimestamp(7, Timestamp.valueOf(firstDebit));
+				// Why test_mode is stored here, permanently, on the RD row
+				// itself: this is what lets processDueInstallments() below
+				// read each RD's OWN test/real choice back later, instead of
+				// relying on a single global flag applied to every RD being
+				// processed in the same 30-second cycle — a real-mode RD and
+				// a test-mode RD can now correctly coexist and advance on
+				// their own separate schedules.
+				ps.setBoolean(8, testMode);
 				int rows = ps.executeUpdate();
 				return rows > 0;
 			}
@@ -88,7 +102,16 @@ public class RecurringDepositDao {
 	// Why this is structured almost identically to processMaturedDeposits():
 	// both are "find due records, act on them, advance/close their status" —
 	// same shape, different specifics (recurring debit vs one-time maturity).
-	public void processDueInstallments(boolean testMode) {
+	//
+	// Why this method takes NO testMode parameter, unlike its earlier
+	// version: previously a single boolean was passed in from
+	// MaturityCheckerListener and applied to EVERY RD processed in the same
+	// cycle — meaning a real-mode RD would incorrectly get advanced on
+	// 5-minute test timing just because some OTHER RD in the system happened
+	// to be in test mode. Now each row's own "test_mode" column (read further
+	// below) decides its own advancement timing — real and test RDs can
+	// correctly coexist and be processed correctly in the very same cycle.
+	public void processDueInstallments() {
 		String findDueSql = "SELECT * FROM recurring_deposit WHERE status = 'ACTIVE' AND next_debit_date <= NOW()";
 		String getBalanceSql = "SELECT balance FROM account WHERE accno = ? FOR UPDATE";
 		String debitSql = "UPDATE account SET balance = balance - ? WHERE accno = ?";
@@ -97,18 +120,22 @@ public class RecurringDepositDao {
 		String advanceSql = "UPDATE recurring_deposit "
 				+ "SET installments_paid = installments_paid + 1, next_debit_date = ? WHERE rd_id = ?";
 
-		// Why "MATURED" now, not "COMPLETED": aligning terminology with
+		// Why "MATURED", not "COMPLETED": aligning terminology with
 		// FixedDeposit's status naming ('ACTIVE' -> 'MATURED') — both
 		// represent the same real-world event (a deposit product reaching
 		// the end of its agreed term and paying out), so using the same
 		// word for the same concept keeps the whole project's vocabulary
-		// consistent rather than having two different words mean the same thing.
-		String completeSql = "UPDATE recurring_deposit SET status = 'COMPLETED' WHERE rd_id = ?";
+		// consistent rather than having two different words mean the same
+		// thing. (Flagging this explicitly: this had reverted back to
+		// 'COMPLETED' at some point after we agreed on 'MATURED' — corrected
+		// here to match FixedDeposit's status values exactly.)
+		String completeSql = "UPDATE recurring_deposit SET status = 'MATURED' WHERE rd_id = ?";
 
-		// Why this credit statement and transaction type are new: this is
-		// the entire fix for the "money vanishes" gap — without this,
-		// finishing an RD did nothing but change a status label, with no
-		// money ever returning to the customer.
+		// Why this credit statement and transaction type are new (relative to
+		// the RD feature's very first version): this is the entire fix for
+		// the "money vanishes" gap — without this, finishing an RD did
+		// nothing but change a status label, with no money ever returning to
+		// the customer.
 		String creditMaturitySql = "UPDATE account SET balance = balance + ? WHERE accno = ?";
 		String logMaturitySql = "INSERT INTO transaction (saccno, benaccno, amount, type) "
 				+ "VALUES (?, NULL, ?, 'RD_MATURED')";
@@ -125,6 +152,13 @@ public class RecurringDepositDao {
 				BigDecimal interestRate = rs.getBigDecimal("interest_rate");
 				int installmentsPaid = rs.getInt("installments_paid");
 				Timestamp currentNextDebit = rs.getTimestamp("next_debit_date");
+				// Why this is read PER ROW, inside the loop, rather than
+				// passed into the method once: this is the actual fix — each
+				// RD carries its own independent test/real choice from when
+				// it was booked, so two different RDs being processed in the
+				// SAME while-loop pass can correctly advance on two
+				// different schedules below.
+				boolean testMode = rs.getBoolean("test_mode");
 
 				BigDecimal currentBalance;
 				try (PreparedStatement getPs = conn.prepareStatement(getBalanceSql)) {
@@ -163,7 +197,7 @@ public class RecurringDepositDao {
 					// cycle as the FINAL installment debit, not as a
 					// separate later step: once the last installment is
 					// paid, the RD term is immediately complete — there's
-					// no reason to wait for a future check to pay it out
+					// no reason to wait for a future check to pay it out.
 					BigDecimal maturityAmount = calculateRDMaturityAmount(monthlyAmount, noOfMonths, interestRate);
 
 					try (PreparedStatement creditPs = conn.prepareStatement(creditMaturitySql)) {
@@ -224,6 +258,15 @@ public class RecurringDepositDao {
 				rd.setBookDate(rs.getTimestamp("book_date"));
 				rd.setNextDebitDate(rs.getTimestamp("next_debit_date"));
 				rd.setStatus(rs.getString("status"));
+				// Why this line was missing before: RecurringDeposit.java
+				// has a testMode field (added alongside the database
+				// column), but this method — the one that powers
+				// myRDs.jsp's listing — was never updated to actually read
+				// it back. Without this line, every RecurringDeposit object
+				// built here would silently default to testMode=false
+				// (Java's default for a boolean field), even for RDs that
+				// were genuinely booked in test mode.
+				rd.setTestMode(rs.getBoolean("test_mode"));
 				rds.add(rd);
 			}
 

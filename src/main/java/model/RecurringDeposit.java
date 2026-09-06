@@ -97,4 +97,14 @@ public class RecurringDeposit {
 	public void setStatus(String status) {
 		this.status = status;
 	}
+
+	private boolean testMode;
+
+	public boolean isTestMode() {
+		return testMode;
+	}
+
+	public void setTestMode(boolean testMode) {
+		this.testMode = testMode;
+	}
 }

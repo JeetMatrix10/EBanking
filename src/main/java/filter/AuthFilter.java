@@ -17,8 +17,8 @@ import javax.servlet.http.HttpSession;
 // register.jsp, and index.jsp must stay reachable WITHOUT being logged in
 // (that's the whole point of them) — "/*" would lock those out too and
 // nobody could ever log in.
-@WebFilter(urlPatterns = { "/dashboard.jsp", "/deposit.jsp", "/withdraw.jsp", "/transfer.jsp", "/transactions.jsp",
-		"/profile.jsp" })
+@WebFilter(urlPatterns = { "/dashboard.jsp", "/deposit", "/withdraw", "/transfer", "/viewTransactions", "/checkBalance",
+		"/profile", "/bookFD", "/bookRD", "/myFDs", "/myRDs", "/prematureWithdrawFD" })
 public class AuthFilter implements Filter {
 
 	// Why we implement Filter instead of extending HttpServlet: a Filter

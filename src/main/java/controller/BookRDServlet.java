@@ -63,6 +63,7 @@ public class BookRDServlet extends HttpServlet {
 		rd.setNoOfMonths(Integer.parseInt(monthsStr));
 		rd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
 		rd.setInterestRate(new BigDecimal(interestRateStr));
+		rd.setTestMode(testMode);
 
 		RecurringDepositDao dao = new RecurringDepositDao();
 		boolean success = dao.bookRD(rd, testMode);

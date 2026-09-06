@@ -26,13 +26,15 @@ public class MaturityCheckerListener implements ServletContextListener {
 		FixedDepositDao fdDao = new FixedDepositDao();
 		RecurringDepositDao rdDao = new RecurringDepositDao();
 
-		// Why ONE scheduleAtFixedRate call handling both, not two separate
-		// calls: this is a single background job that checks two things
-		// every cycle — running two independent schedulers would mean two
-		// separate threads doing overlapping, uncoordinated work for no benefit.
+		// Why processDueInstallments() no longer takes an argument: test
+		// mode is now read PER-RD from the database itself (set once at
+		// booking time), not decided globally by this listener. This fixes
+		// a real bug where every RD in the project — even ones booked in
+		// real mode — was being advanced on 5-minute test timing regardless
+		// of what the customer actually chose when booking.
 		scheduler.scheduleAtFixedRate(() -> {
 			fdDao.processMaturedDeposits();
-			rdDao.processDueInstallments(true); // true = test mode timing active project-wide
+			rdDao.processDueInstallments();
 		}, 0, 30, TimeUnit.SECONDS);
 
 		System.out.println("FD/RD Maturity Checker started — running every 30 seconds.");
