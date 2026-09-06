@@ -1,12 +1,14 @@
 package dao;
 
 import java.sql.Connection;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import model.Customer;
 import utilities.ConnectionFactory;
+import utilities.PasswordUtil;
 
 public class CustomerDao {
 
@@ -64,7 +66,7 @@ public class CustomerDao {
 				ps.setString(4, customer.getEmail());
 				ps.setString(5, customer.getPanno());
 				ps.setString(6, customer.getAadhaarno());
-				ps.setString(7, customer.getPassword());
+				ps.setString(7, PasswordUtil.hashPassword(customer.getPassword()));
 
 				int rowsInserted = ps.executeUpdate();
 				return rowsInserted > 0 ? newCid : null;
@@ -77,25 +79,32 @@ public class CustomerDao {
 	}
 
 	public Customer validateLogin(String identifier, String password) {
-		String sql = "SELECT * FROM customer WHERE (cid = ? OR email = ?) AND password = ?";
+		String sql = "SELECT * FROM customer WHERE (cid = ? OR email = ?)";
 
 		try (Connection conn = ConnectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
 			ps.setString(1, identifier);
 			ps.setString(2, identifier);
-			ps.setString(3, password);
 			ResultSet rs = ps.executeQuery();
 
 			if (rs.next()) {
-				Customer customer = new Customer();
-				customer.setCid(rs.getString("cid"));
-				customer.setName(rs.getString("name"));
-				customer.setPhone(rs.getString("phone"));
-				customer.setEmail(rs.getString("email"));
-				customer.setPanno(rs.getString("panno"));
-				customer.setAadhaarno(rs.getString("aadhaarno"));
-				customer.setPassword(rs.getString("password"));
-				return customer;
+				String storedHash = rs.getString("password");
+
+				// Why we check the password here, AFTER fetching the row,
+				// rather than in the SQL: this is the actual verification step
+				// now — BCrypt.checkpw() re-hashes the plain-text attempt using
+				// the salt embedded in storedHash, then compares the results.
+				if (PasswordUtil.checkPassword(password, storedHash)) {
+					Customer customer = new Customer();
+					customer.setCid(rs.getString("cid"));
+					customer.setName(rs.getString("name"));
+					customer.setPhone(rs.getString("phone"));
+					customer.setEmail(rs.getString("email"));
+					customer.setPanno(rs.getString("panno"));
+					customer.setAadhaarno(rs.getString("aadhaarno"));
+					customer.setPassword(storedHash);
+					return customer;
+				}
 			}
 
 		} catch (SQLException e) {
@@ -132,11 +141,40 @@ public class CustomerDao {
 		return null;
 	}
 
-	// Why this only updates phone/email plus password (matches your CustomerUpd.jsp
-	// wireframe):
-	// name, PAN, and Aadhaar are identity/KYC documents — real banks don't let
-	// these be casually edited without a formal re-verification process, so we
-	// deliberately don't expose them here.
+//	 Why this only updates phone/email plus password (matches your CustomerUpd.jsp
+//	 wireframe):
+//	 name, PAN, and Aadhaar are identity/KYC documents — real banks don't let
+//	 these be casually edited without a formal re-verification process, so we
+//	 deliberately don't expose them here.
+//	public boolean updateCustomer(String cid, String phone, String email, String password) {
+//		String sql = "UPDATE customer SET phone = ?, email = ?, password = ? WHERE cid = ?";
+//
+//		try (Connection conn = ConnectionFactory.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+//
+//			ps.setString(1, phone);
+//			ps.setString(2, email);
+//			ps.setString(3, password);
+//			ps.setString(4, cid);
+//
+//			int rowsUpdated = ps.executeUpdate();
+//			return rowsUpdated > 0;
+//
+//		} catch (SQLException e) {
+//			System.out.println("Error updating customer: " + e.getMessage());
+//			return false;
+//		}
+//	}
+	// Why this method now needs to know whether "password" is already hashed:
+	// ProfileServlet/ManageUsersServlet sometimes pass a BRAND NEW plain-text
+	// password (user typed one in), and sometimes pass back the EXISTING
+	// stored hash unchanged (user left the password field blank). Hashing an
+	// already-hashed value AGAIN would corrupt it — the customer's real
+	// password would then no longer match on their next login. We solve this
+	// by hashing at the SOURCE (in the servlets, right before calling this
+	// method) rather than inside this method — see ProfileServlet/
+	// ManageUsersServlet changes below. This method now assumes whatever
+	// "password" it receives is ALREADY in its final, correct form (hash or
+	// unchanged hash) and stores it as-is.
 	public boolean updateCustomer(String cid, String phone, String email, String password) {
 		String sql = "UPDATE customer SET phone = ?, email = ?, password = ? WHERE cid = ?";
 

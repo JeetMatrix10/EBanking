@@ -12,6 +12,7 @@ import javax.servlet.http.HttpSession;
 
 import dao.CustomerDao;
 import model.Customer;
+import utilities.PasswordUtil;
 
 @WebServlet("/profile")
 public class ProfileServlet extends HttpServlet {
@@ -52,13 +53,28 @@ public class ProfileServlet extends HttpServlet {
 		String email = request.getParameter("email");
 		String newPassword = request.getParameter("password");
 
-		// Determine which password to save based on what the user submitted
+//		// Determine which password to save based on what the user submitted
+//		String finalPassword;
+//		if (newPassword == null || newPassword.trim().isEmpty()) {
+//			finalPassword = loggedInCustomer.getPassword(); // Keep old password
+//		} else {
+//			finalPassword = newPassword.trim(); // Use new password
+//		}
 		String finalPassword;
 		if (newPassword == null || newPassword.trim().isEmpty()) {
-			finalPassword = loggedInCustomer.getPassword(); // Keep old password
+			// Why we do NOT re-hash here: loggedInCustomer.getPassword() already
+			// holds the EXISTING BCrypt hash (fetched from the database at login) —
+			// passing it straight through keeps it unchanged.
+			finalPassword = loggedInCustomer.getPassword();
 		} else {
-			finalPassword = newPassword.trim(); // Use new password
+			// Why we hash HERE, not inside CustomerDao.updateCustomer(): this is
+			// the one place that definitively knows "this is a brand-new plain-text
+			// password the customer just typed" — hashing at the point where plain
+			// text genuinely exists, then treating it as an opaque hash everywhere
+			// downstream, avoids ever accidentally double-hashing.
+			finalPassword = PasswordUtil.hashPassword(newPassword.trim());
 		}
+
 		// Why we ONLY ever use loggedInCustomer.getCid() here, never a cid
 		// from request.getParameter(...): this is the same ownership
 		// principle as before — even if someone tampered with a hidden form
