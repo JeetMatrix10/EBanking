@@ -1,7 +1,6 @@
 package controller;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -13,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import dao.AccountDao;
 import dao.FixedDepositDao;
 import model.Customer;
 import model.FixedDeposit;
@@ -30,7 +28,6 @@ public class PrematureWithdrawFDServlet extends HttpServlet {
 
 		FixedDepositDao dao = new FixedDepositDao();
 		List<FixedDeposit> activeFDs = dao.getActiveFDsByCid(loggedInCustomer.getCid());
-
 		request.setAttribute("activeFDs", activeFDs);
 
 		RequestDispatcher dispatcher = request.getRequestDispatcher("prematureWithdrawFD.jsp");
@@ -44,9 +41,6 @@ public class PrematureWithdrawFDServlet extends HttpServlet {
 
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
-
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
 
 		FixedDepositDao dao = new FixedDepositDao();
 
@@ -66,18 +60,19 @@ public class PrematureWithdrawFDServlet extends HttpServlet {
 		}
 
 		if (accno == null) {
-			out.println("<h3>Access denied or FD not found.</h3>");
-			out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+			// out.println("<h3>Access denied or FD not found.</h3>");
+			// out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+			// return;
+			request.setAttribute("notFound", true);
+			request.getRequestDispatcher("prematureWithdrawResult.jsp").forward(request, response);
 			return;
 		}
 
 		BigDecimal payoutAmount = dao.prematureWithdrawFD(fdId, accno);
+		request.setAttribute("payoutAmount", payoutAmount);
 
-		if (payoutAmount != null) {
-			out.println("<h3>FD closed early. Amount credited (after penalty): " + payoutAmount + "</h3>");
-		} else {
-			out.println("<h3>Premature withdrawal failed.</h3>");
-		}
-		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+		RequestDispatcher dispatcher = request.getRequestDispatcher("prematureWithdrawResult.jsp");
+		dispatcher.forward(request, response);
+
 	}
 }

@@ -1,9 +1,9 @@
 package controller.admin;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -26,14 +26,9 @@ public class AdminTransactionServlet extends HttpServlet {
 		AccountDao dao = new AccountDao();
 		boolean success = dao.updateAccountBalance(accno, newBalance);
 
-		response.setContentType("text/html");
-		PrintWriter out = response.getWriter();
+		request.setAttribute("success", success);
 
-		if (success) {
-			out.println("<h3>Account balance updated successfully.</h3>");
-		} else {
-			out.println("<h3>Update failed. Check the account number.</h3>");
-		}
-		out.println("<a href='adminDashboard.jsp'>Back to Admin Dashboard</a>");
+		RequestDispatcher dispatcher = request.getRequestDispatcher("updateAccountResult.jsp");
+		dispatcher.forward(request, response);
 	}
 }

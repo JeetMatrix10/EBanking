@@ -27,15 +27,17 @@ public class AdminLoginServlet extends HttpServlet {
 
 		if (admin != null) {
 			HttpSession session = request.getSession();
-
-			// Why "loggedInAdmin" as a different attribute name than
-			// "loggedInCustomer": this lets us later write a SEPARATE filter
-			// (AdminAuthFilter) that checks specifically for admin sessions,
-			// without any risk of confusing an admin session with a customer one.
 			session.setAttribute("loggedInAdmin", admin);
-			response.sendRedirect("admin/adminDashboard.jsp");
+
+			// Why getContextPath() + "/..." here, matching AuthFilter and
+			// AdminAuthFilter's pattern exactly: a plain relative redirect
+			// technically happened to work before, but only by coincidence
+			// of this servlet's specific URL mapping — using the context
+			// path explicitly makes the destination unambiguous regardless
+			// of where the redirect is triggered from.
+			response.sendRedirect(request.getContextPath() + "/admin/adminDashboard.jsp");
 		} else {
-			response.sendRedirect("admin/adminLogin.jsp?error=true");
+			response.sendRedirect(request.getContextPath() + "/admin/adminLogin.jsp?error=true");
 		}
 	}
 }

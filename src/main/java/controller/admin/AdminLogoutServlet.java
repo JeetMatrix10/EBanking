@@ -17,15 +17,15 @@ import javax.servlet.http.HttpSession;
 // complexity for no real benefit over just having two small, obvious classes.
 @WebServlet("/adminLogout")
 public class AdminLogoutServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-        response.sendRedirect("admin/adminLogin.jsp");
-    }
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			session.invalidate();
+		}
+		response.sendRedirect(request.getContextPath() + "/admin/adminLogin.jsp");
+	}
 }
