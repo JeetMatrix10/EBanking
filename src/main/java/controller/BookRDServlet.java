@@ -22,62 +22,64 @@ import model.RecurringDeposit;
 
 @WebServlet("/bookRD")
 public class BookRDServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
-        List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
+		AccountDao accountDao = new AccountDao();
+		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
 
-        request.setAttribute("accounts", accounts);
+		request.setAttribute("accounts", accounts);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("recurring.jsp");
-        dispatcher.forward(request, response);
-    }
-    
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+		RequestDispatcher dispatcher = request.getRequestDispatcher("recurring.jsp");
+		dispatcher.forward(request, response);
+	}
 
-        String accno = request.getParameter("accno");
-        String monthsStr = request.getParameter("months");
-        String amountStr = request.getParameter("amount");
-        boolean testMode = "on".equals(request.getParameter("testMode"));
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		String accno = request.getParameter("accno");
+		String monthsStr = request.getParameter("months");
+		String amountStr = request.getParameter("amount");
+		String interestRateStr = request.getParameter("interestRate");
+		boolean testMode = "on".equals(request.getParameter("testMode"));
 
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
-        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-            out.println("<h3>Access denied. This account does not belong to you.</h3>");
-            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-            return;
-        }
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        RecurringDeposit rd = new RecurringDeposit();
-        rd.setCid(loggedInCustomer.getCid());
-        rd.setAccno(accno);
-        rd.setMonthlyAmount(new BigDecimal(amountStr));
-        rd.setNoOfMonths(Integer.parseInt(monthsStr));
-        rd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+		AccountDao accountDao = new AccountDao();
+//        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+//            out.println("<h3>Access denied. This account does not belong to you.</h3>");
+//            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+//            return;
+//        }
 
-        RecurringDepositDao dao = new RecurringDepositDao();
-        boolean success = dao.bookRD(rd, testMode);
+		RecurringDeposit rd = new RecurringDeposit();
+		rd.setCid(loggedInCustomer.getCid());
+		rd.setAccno(accno);
+		rd.setMonthlyAmount(new BigDecimal(amountStr));
+		rd.setNoOfMonths(Integer.parseInt(monthsStr));
+		rd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+		rd.setInterestRate(new BigDecimal(interestRateStr));
 
-        if (success) {
-            out.println("<h3>Recurring Deposit booked successfully!</h3>");
-            if (testMode) {
-                out.println("<p><em>Test mode: installments debit every 5 minutes instead of monthly.</em></p>");
-            }
-        } else {
-            out.println("<h3>RD booking failed.</h3>");
-        }
-        out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-    }
+		RecurringDepositDao dao = new RecurringDepositDao();
+		boolean success = dao.bookRD(rd, testMode);
+
+		if (success) {
+			out.println("<h3>Recurring Deposit booked successfully!</h3>");
+			if (testMode) {
+				out.println("<p><em>Test mode: installments debit every 5 minutes instead of monthly.</em></p>");
+			}
+		} else {
+			out.println("<h3>RD booking failed.</h3>");
+		}
+		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+	}
 }
