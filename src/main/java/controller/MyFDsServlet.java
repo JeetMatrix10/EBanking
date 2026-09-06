@@ -17,25 +17,25 @@ import model.FixedDeposit;
 
 @WebServlet("/myFDs")
 public class MyFDsServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        // Why no ownership check is needed here, unlike deposit/withdraw/FD
-        // booking: this method only ever reads FDs belonging to
-        // loggedInCustomer.getCid() — there's no accno or fdId coming from
-        // the user that could be swapped to someone else's, so there's
-        // nothing to validate against.
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		// Why no ownership check is needed here, unlike deposit/withdraw/FD
+		// booking: this method only ever reads FDs belonging to
+		// loggedInCustomer.getCid() — there's no accno or fdId coming from
+		// the user that could be swapped to someone else's, so there's
+		// nothing to validate against.
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        FixedDepositDao dao = new FixedDepositDao();
-        List<FixedDeposit> fds = dao.getFDsByCid(loggedInCustomer.getCid());
+		FixedDepositDao dao = new FixedDepositDao();
+		List<FixedDeposit> fds = dao.getFDsByCid(loggedInCustomer.getCid());
 
-        request.setAttribute("fds", fds);
+		request.setAttribute("fds", fds);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("myFDs.jsp");
-        dispatcher.forward(request, response);
-    }
+		RequestDispatcher dispatcher = request.getRequestDispatcher("myFDs.jsp");
+		dispatcher.forward(request, response);
+	}
 }

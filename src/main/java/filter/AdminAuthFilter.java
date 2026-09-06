@@ -19,42 +19,40 @@ import javax.servlet.http.HttpSession;
 // without needing to remember to list it here too. The three servlet paths
 // are added separately because they're mapped at the root ("/manageCustomer",
 // not "/admin/manageCustomer"), so the wildcard alone wouldn't catch them.
-@WebFilter(urlPatterns = {
-    "/admin/*", "/manageCustomer", "/updateAccount", "/addAccount"
-})
+@WebFilter(urlPatterns = { "/admin/*", "/manageCustomer", "/updateAccount", "/addAccount" })
 public class AdminAuthFilter implements Filter {
 
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
 
-        HttpServletRequest req = (HttpServletRequest) request;
-        HttpServletResponse res = (HttpServletResponse) response;
+		HttpServletRequest req = (HttpServletRequest) request;
+		HttpServletResponse res = (HttpServletResponse) response;
 
-        String uri = req.getRequestURI();
+		String uri = req.getRequestURI();
 
-        // Why this specific exception exists: without it, the wildcard
-        // above would block access to the admin login page itself — nobody
-        // could ever log in, since the very act of reaching adminLogin.jsp
-        // would be treated as "not logged in yet, redirect to login,"
-        // creating an infinite redirect loop back to itself.
-        if (uri.endsWith("adminLogin.jsp") || uri.endsWith("/adminLogin")) {
-            chain.doFilter(request, response);
-            return;
-        }
+		// Why this specific exception exists: without it, the wildcard
+		// above would block access to the admin login page itself — nobody
+		// could ever log in, since the very act of reaching adminLogin.jsp
+		// would be treated as "not logged in yet, redirect to login,"
+		// creating an infinite redirect loop back to itself.
+		if (uri.endsWith("adminLogin.jsp") || uri.endsWith("/adminLogin")) {
+			chain.doFilter(request, response);
+			return;
+		}
 
-        HttpSession session = req.getSession(false);
-        boolean loggedIn = (session != null && session.getAttribute("loggedInAdmin") != null);
+		HttpSession session = req.getSession(false);
+		boolean loggedIn = (session != null && session.getAttribute("loggedInAdmin") != null);
 
-        if (loggedIn) {
-            chain.doFilter(request, response);
-        } else {
-            res.sendRedirect(req.getContextPath() + "/admin/adminLogin.jsp");
-        }
-    }
+		if (loggedIn) {
+			chain.doFilter(request, response);
+		} else {
+			res.sendRedirect(req.getContextPath() + "/admin/adminLogin.jsp");
+		}
+	}
 
-    public void init(FilterConfig filterConfig) throws ServletException {
-    }
+	public void init(FilterConfig filterConfig) throws ServletException {
+	}
 
-    public void destroy() {
-    }
+	public void destroy() {
+	}
 }

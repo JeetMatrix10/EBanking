@@ -19,49 +19,49 @@ import model.Customer;
 // mapping because it's less error-prone (one less file to keep in sync).
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    // Why doPost, not doGet: registration submits sensitive data (password),
-    // and GET requests expose form data in the URL (visible in browser history,
-    // server logs). POST keeps it in the request body instead — standard
-    // practice for any form that writes data or handles credentials.
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	// Why doPost, not doGet: registration submits sensitive data (password),
+	// and GET requests expose form data in the URL (visible in browser history,
+	// server logs). POST keeps it in the request body instead — standard
+	// practice for any form that writes data or handles credentials.
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        // Why request.getParameter: this reads the value typed into each
-        // <input name="..."> field in register.jsp. The string inside
-        // getParameter() MUST exactly match the "name" attribute in the JSP form.
-        String name = request.getParameter("name");
-        String phone = request.getParameter("phone");
-        String email = request.getParameter("email");
-        String panno = request.getParameter("panno");
-        String aadhaarno = request.getParameter("aadhaarno");
-        String password = request.getParameter("password");
+		// Why request.getParameter: this reads the value typed into each
+		// <input name="..."> field in register.jsp. The string inside
+		// getParameter() MUST exactly match the "name" attribute in the JSP form.
+		String name = request.getParameter("name");
+		String phone = request.getParameter("phone");
+		String email = request.getParameter("email");
+		String panno = request.getParameter("panno");
+		String aadhaarno = request.getParameter("aadhaarno");
+		String password = request.getParameter("password");
 
-        // Why we build a Customer object here rather than passing raw strings
-        // to the DAO: it keeps registerCustomer()'s method signature clean
-        // (one object, not seven separate string parameters), and matches
-        // what the DAO already expects.
-        Customer customer = new Customer(name, phone, email, panno, aadhaarno, password);
+		// Why we build a Customer object here rather than passing raw strings
+		// to the DAO: it keeps registerCustomer()'s method signature clean
+		// (one object, not seven separate string parameters), and matches
+		// what the DAO already expects.
+		Customer customer = new Customer(name, phone, email, panno, aadhaarno, password);
 
-        CustomerDao dao = new CustomerDao();
-        String generatedCid = dao.registerCustomer(customer);
+		CustomerDao dao = new CustomerDao();
+		String generatedCid = dao.registerCustomer(customer);
 
-        // Why we set content type and write HTML directly here (instead of
-        // forwarding to another JSP) for now: it's the fastest way to confirm
-        // the whole flow works end-to-end before we build a polished
-        // success/failure JSP page. We'll replace this with proper page
-        // forwarding once the core flow is proven.
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		// Why we set content type and write HTML directly here (instead of
+		// forwarding to another JSP) for now: it's the fastest way to confirm
+		// the whole flow works end-to-end before we build a polished
+		// success/failure JSP page. We'll replace this with proper page
+		// forwarding once the core flow is proven.
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        if (generatedCid != null) {
-            out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
-            out.println("<p>Please save this ID — you'll need it to log in.</p>");
-            out.println("<a href='login.jsp'>Go to Login</a>");
-        } else {
-            out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
-            out.println("<a href='register.jsp'>Try Again</a>");
-        }
-    }
+		if (generatedCid != null) {
+			out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
+			out.println("<p>Please save this ID — you'll need it to log in.</p>");
+			out.println("<a href='login.jsp'>Go to Login</a>");
+		} else {
+			out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
+			out.println("<a href='register.jsp'>Try Again</a>");
+		}
+	}
 }

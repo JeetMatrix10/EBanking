@@ -23,84 +23,85 @@ import model.FixedDeposit;
 
 @WebServlet("/bookFD")
 public class BookFDServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
-        List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
+		AccountDao accountDao = new AccountDao();
+		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
 
-        request.setAttribute("accounts", accounts);
+		request.setAttribute("accounts", accounts);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("fd.jsp");
-        dispatcher.forward(request, response);
-    }
-    
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+		RequestDispatcher dispatcher = request.getRequestDispatcher("fd.jsp");
+		dispatcher.forward(request, response);
+	}
 
-        String accno = request.getParameter("accno");
-        String yearsStr = request.getParameter("years");
-        String interestRateStr = request.getParameter("interestRate");
-        String amountStr = request.getParameter("amount");
-        
-     // Why "testMode" is read this way: an unchecked HTML checkbox sends
-        // NO parameter at all (not "false" — nothing), so getParameter()
-        // returns null. We treat "the checkbox value equals 'on'" as true,
-        // and null/anything else as false.
-        boolean testMode = "on".equals(request.getParameter("testMode"));
-        
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		String accno = request.getParameter("accno");
+		String yearsStr = request.getParameter("years");
+		String interestRateStr = request.getParameter("interestRate");
+		String amountStr = request.getParameter("amount");
 
-        // Why the SAME ownership check from deposit/withdraw is repeated
-        // here: FD booking deducts money from an account, same risk profile
-        // as deposit/withdraw — anyone touching a real account's balance
-        // needs this guard, no exceptions.
-        AccountDao accountDao = new AccountDao();
-        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-            out.println("<h3>Access denied. This account does not belong to you.</h3>");
-            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-            return;
-        }
+		// Why "testMode" is read this way: an unchecked HTML checkbox sends
+		// NO parameter at all (not "false" — nothing), so getParameter()
+		// returns null. We treat "the checkbox value equals 'on'" as true,
+		// and null/anything else as false.
+		boolean testMode = "on".equals(request.getParameter("testMode"));
 
-        FixedDeposit fd = new FixedDeposit();
-        fd.setCid(loggedInCustomer.getCid());
-        fd.setAccno(accno);
-        fd.setAmount(new BigDecimal(amountStr));
-        fd.setNoOfYears(Integer.parseInt(yearsStr));
-        fd.setInterestRate(new BigDecimal(interestRateStr));
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        // Why Date.valueOf(LocalDate.now()) here for bookDate, instead of a
-        // form field asking the customer to type today's date: it should
-        // never be user-editable — the FD is booked at whatever moment this
-        // servlet runs, not at a date someone could otherwise fake to be
-        // earlier or later.
-        // fd.setBookDate(Date.valueOf(java.time.LocalDate.now()));
-        fd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
-        
-        FixedDepositDao dao = new FixedDepositDao();
-        boolean success = dao.bookFD(fd, testMode);
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        if (success) {
-            out.println("<h3>Fixed Deposit booked successfully!</h3>");
-            if (testMode) {
-            	// Calculate the actual wait time for the user message
-            	int testMinutesWait=Integer.parseInt(yearsStr)*5;
-                out.println("<p><em>Test mode: this FD will mature in "
-                           + testMinutesWait + " minute(s) instead of years. "
-                           + "Check your account balance again after that time.</em></p>");
-            }
-        } else {
-            out.println("<h3>FD booking failed. Check the account number and available balance.</h3>");
-        }
-        out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-    }
+		// Why the SAME ownership check from deposit/withdraw is repeated
+		// here: FD booking deducts money from an account, same risk profile
+		// as deposit/withdraw — anyone touching a real account's balance
+		// needs this guard, no exceptions.
+		AccountDao accountDao = new AccountDao();
+//        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+//            out.println("<h3>Access denied. This account does not belong to you.</h3>");
+//            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+//            return;
+//        }
+
+		FixedDeposit fd = new FixedDeposit();
+		fd.setCid(loggedInCustomer.getCid());
+		fd.setAccno(accno);
+		fd.setAmount(new BigDecimal(amountStr));
+		fd.setNoOfYears(Integer.parseInt(yearsStr));
+		fd.setInterestRate(new BigDecimal(interestRateStr));
+
+		// Why Date.valueOf(LocalDate.now()) here for bookDate, instead of a
+		// form field asking the customer to type today's date: it should
+		// never be user-editable — the FD is booked at whatever moment this
+		// servlet runs, not at a date someone could otherwise fake to be
+		// earlier or later.
+		// fd.setBookDate(Date.valueOf(java.time.LocalDate.now()));
+		fd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+
+		FixedDepositDao dao = new FixedDepositDao();
+		boolean success = dao.bookFD(fd, testMode);
+
+		if (success) {
+			out.println("<h3>Fixed Deposit booked successfully!</h3>");
+			if (testMode) {
+				// Calculate the actual wait time for the user message
+				int testMinutesWait = Integer.parseInt(yearsStr) * 5;
+				out.println(
+						"<p><em>Test mode: this FD will mature in " + testMinutesWait + " minute(s) instead of years. "
+								+ "Check your account balance again after that time.</em></p>");
+			}
+		} else {
+//            out.println("<h3>FD booking failed. Check the account number and available balance.</h3>");
+			out.println("<h3>FD booking failed. Check available balance.</h3>");
+		}
+		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+	}
 }

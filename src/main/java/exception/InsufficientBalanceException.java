@@ -6,9 +6,9 @@ package exception;
 // to explicitly handle it (via try/catch or "throws"), which is appropriate
 // here since silently ignoring a failed withdrawal would be a serious bug.
 public class InsufficientBalanceException extends Exception {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    public InsufficientBalanceException(String message) {
-        super(message);
-    }
+	public InsufficientBalanceException(String message) {
+		super(message);
+	}
 }

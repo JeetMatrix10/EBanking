@@ -21,57 +21,57 @@ import model.Account;
 
 @WebServlet("/withdraw")
 public class WithdrawServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
-        List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
+		AccountDao accountDao = new AccountDao();
+		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
 
-        request.setAttribute("accounts", accounts);
+		request.setAttribute("accounts", accounts);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("withdraw.jsp");
-        dispatcher.forward(request, response);
-    }
-    
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+		RequestDispatcher dispatcher = request.getRequestDispatcher("withdraw.jsp");
+		dispatcher.forward(request, response);
+	}
 
-        String accno = request.getParameter("accno");
-        String amountStr = request.getParameter("amount");
-        BigDecimal amount = new BigDecimal(amountStr);
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		String accno = request.getParameter("accno");
+		String amountStr = request.getParameter("amount");
+		BigDecimal amount = new BigDecimal(amountStr);
 
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-            out.println("<h3>Access denied. This account does not belong to you.</h3>");
-            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-            return;
-        }
+		AccountDao accountDao = new AccountDao();
 
-        TransactionDao dao = new TransactionDao();
+		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+			out.println("<h3>Access denied. This account does not belong to you.</h3>");
+			out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+			return;
+		}
 
-        try {
-            boolean success = dao.withdraw(accno, amount);
-            if (success) {
-                out.println("<h3>Withdrawal successful!</h3>");
-            } else {
-                out.println("<h3>Withdrawal failed. Check the account number.</h3>");
-            }
-        } catch (InsufficientBalanceException e) {
-            out.println("<h3>Withdrawal failed: " + e.getMessage() + "</h3>");
-        }
+		TransactionDao dao = new TransactionDao();
 
-        out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-    }
+		try {
+			boolean success = dao.withdraw(accno, amount);
+			if (success) {
+				out.println("<h3>Withdrawal successful!</h3>");
+			} else {
+				out.println("<h3>Withdrawal failed. Check the account number.</h3>");
+			}
+		} catch (InsufficientBalanceException e) {
+			out.println("<h3>Withdrawal failed: " + e.getMessage() + "</h3>");
+		}
+
+		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+	}
 }

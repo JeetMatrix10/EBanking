@@ -16,7 +16,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Deposit - EBanking</title>
+<title>Deposit - EBanking</title>
 </head>
 <body>
     <h2>Deposit Funds</h2>

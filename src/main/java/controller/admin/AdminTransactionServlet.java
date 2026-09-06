@@ -14,26 +14,26 @@ import dao.AccountDao;
 
 @WebServlet("/updateAccount")
 public class AdminTransactionServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        String accno = request.getParameter("accno");
-        String balanceStr = request.getParameter("balance");
-        BigDecimal newBalance = new BigDecimal(balanceStr);
+		String accno = request.getParameter("accno");
+		String balanceStr = request.getParameter("balance");
+		BigDecimal newBalance = new BigDecimal(balanceStr);
 
-        AccountDao dao = new AccountDao();
-        boolean success = dao.updateAccountBalance(accno, newBalance);
+		AccountDao dao = new AccountDao();
+		boolean success = dao.updateAccountBalance(accno, newBalance);
 
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        if (success) {
-            out.println("<h3>Account balance updated successfully.</h3>");
-        } else {
-            out.println("<h3>Update failed. Check the account number.</h3>");
-        }
-        out.println("<a href='adminDashboard.jsp'>Back to Admin Dashboard</a>");
-    }
+		if (success) {
+			out.println("<h3>Account balance updated successfully.</h3>");
+		} else {
+			out.println("<h3>Update failed. Check the account number.</h3>");
+		}
+		out.println("<a href='adminDashboard.jsp'>Back to Admin Dashboard</a>");
+	}
 }

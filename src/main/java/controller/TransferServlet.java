@@ -21,61 +21,61 @@ import model.TransferResult;
 
 @WebServlet("/transfer")
 public class TransferServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
-        List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
+		AccountDao accountDao = new AccountDao();
+		List<Account> accounts = accountDao.getAccountsByCid(loggedInCustomer.getCid());
 
-        request.setAttribute("accounts", accounts);
+		request.setAttribute("accounts", accounts);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("transfer.jsp");
-        dispatcher.forward(request, response);
-    }
-    
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+		RequestDispatcher dispatcher = request.getRequestDispatcher("transfer.jsp");
+		dispatcher.forward(request, response);
+	}
 
-        String saccno = request.getParameter("saccno");
-        String benaccno = request.getParameter("benaccno");
-        String amountStr = request.getParameter("amount");
-        BigDecimal amount = new BigDecimal(amountStr);
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		String saccno = request.getParameter("saccno");
+		String benaccno = request.getParameter("benaccno");
+		String amountStr = request.getParameter("amount");
+		BigDecimal amount = new BigDecimal(amountStr);
 
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao accountDao = new AccountDao();
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
 
-        // Why only saccno is checked, not benaccno: you're only allowed to
-        // move money OUT of your own account — sending it TO someone else's
-        // account is the entire purpose of a transfer, so benaccno belonging
-        // to a different customer is expected and correct, not a violation.
-        if (!accountDao.isAccountOwnedByCustomer(saccno, loggedInCustomer.getCid())) {
-            out.println("<h3>Access denied. The sending account does not belong to you.</h3>");
-            out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-            return;
-        }
+		AccountDao accountDao = new AccountDao();
 
-        TransactionDao dao = new TransactionDao();
-        TransferResult result = dao.transfer(saccno, benaccno, amount);
+		// Why only saccno is checked, not benaccno: you're only allowed to
+		// move money OUT of your own account — sending it TO someone else's
+		// account is the entire purpose of a transfer, so benaccno belonging
+		// to a different customer is expected and correct, not a violation.
+		if (!accountDao.isAccountOwnedByCustomer(saccno, loggedInCustomer.getCid())) {
+			out.println("<h3>Access denied. The sending account does not belong to you.</h3>");
+			out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+			return;
+		}
 
-        if (result.isSuccess()) {
-            out.println("<h3>Transfer successful!</h3>");
-            if (result.getWarningMessage() != null) {
-                out.println("<p style='color:orange;'>" + result.getWarningMessage() + "</p>");
-            }
-        } else {
-            out.println("<h3>Transfer failed. Check both account numbers and available balance.</h3>");
-        }
+		TransactionDao dao = new TransactionDao();
+		TransferResult result = dao.transfer(saccno, benaccno, amount);
 
-        out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-    }
+		if (result.isSuccess()) {
+			out.println("<h3>Transfer successful!</h3>");
+			if (result.getWarningMessage() != null) {
+				out.println("<p style='color:orange;'>" + result.getWarningMessage() + "</p>");
+			}
+		} else {
+			out.println("<h3>Transfer failed. Check both account numbers and available balance.</h3>");
+		}
+
+		out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
+	}
 }

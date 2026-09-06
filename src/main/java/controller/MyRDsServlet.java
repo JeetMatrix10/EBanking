@@ -17,17 +17,17 @@ import model.RecurringDeposit;
 
 @WebServlet("/myRDs")
 public class MyRDsServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        RecurringDepositDao dao = new RecurringDepositDao();
-        List<RecurringDeposit> rds = dao.getRDsByCid(loggedInCustomer.getCid());
-        request.setAttribute("rds", rds);
+		RecurringDepositDao dao = new RecurringDepositDao();
+		List<RecurringDeposit> rds = dao.getRDsByCid(loggedInCustomer.getCid());
+		request.setAttribute("rds", rds);
 
-        request.getRequestDispatcher("myRDs.jsp").forward(request, response);
-    }
+		request.getRequestDispatcher("myRDs.jsp").forward(request, response);
+	}
 }

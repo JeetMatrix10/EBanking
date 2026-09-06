@@ -17,7 +17,7 @@ public class TransferResult {
         return success;
     }
 
-    public String getWarningMessage() {
+	public String getWarningMessage() {
         return warningMessage;
     }
 }

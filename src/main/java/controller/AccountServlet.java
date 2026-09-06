@@ -16,34 +16,34 @@ import model.Customer;
 
 @WebServlet("/checkBalance")
 public class AccountServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        String accno = request.getParameter("accno");
+		String accno = request.getParameter("accno");
 
-        // Why we read the logged-in customer from the session instead of
-        // trusting anything from the request: AuthFilter already guarantees
-        // someone is logged in by the time this servlet runs, and the session
-        // is server-side data the customer can't tamper with — unlike a form
-        // field or URL parameter, which anyone can type anything into.
-        HttpSession session = request.getSession();
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+		// Why we read the logged-in customer from the session instead of
+		// trusting anything from the request: AuthFilter already guarantees
+		// someone is logged in by the time this servlet runs, and the session
+		// is server-side data the customer can't tamper with — unlike a form
+		// field or URL parameter, which anyone can type anything into.
+		HttpSession session = request.getSession();
+		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-        AccountDao dao = new AccountDao();
+		AccountDao dao = new AccountDao();
 
-        // Why we check ownership BEFORE fetching/displaying anything: this is
-        // the actual security boundary — no account data for accno should
-        // ever reach the response unless it belongs to whoever is logged in.
-        if (dao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-            Account account = dao.getAccountByAccno(accno);
-            request.setAttribute("account", account);
-        } else {
-            request.setAttribute("accessDenied", true);
-        }
+		// Why we check ownership BEFORE fetching/displaying anything: this is
+		// the actual security boundary — no account data for accno should
+		// ever reach the response unless it belongs to whoever is logged in.
+		if (dao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+			Account account = dao.getAccountByAccno(accno);
+			request.setAttribute("account", account);
+		} else {
+			request.setAttribute("accessDenied", true);
+		}
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("dashboard.jsp");
-        dispatcher.forward(request, response);
-    }
+		RequestDispatcher dispatcher = request.getRequestDispatcher("dashboard.jsp");
+		dispatcher.forward(request, response);
+	}
 }

@@ -13,12 +13,12 @@
          a doGet() instead, or Tomcat would throw a 405 error. -->
     <form action="register" method="post">
 
-        <!-- Why each input's "name" attribute matters: this is the exact
+		<!-- Why each input's "name" attribute matters: this is the exact
              string RegisterServlet.java uses in request.getParameter("cid"),
              etc. Typos here silently break the servlet with no compile-time
              warning, since JSP form field names aren't checked by the Java
              compiler. -->
-        <label>Full Name:</label><br>
+		<label>Full Name:</label><br>
         <input type="text" name="name" required><br><br>
 
         <label>Phone Number:</label><br>

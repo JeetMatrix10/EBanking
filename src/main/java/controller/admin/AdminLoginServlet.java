@@ -14,28 +14,28 @@ import model.Admin;
 
 @WebServlet("/adminLogin")
 public class AdminLoginServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
+		String username = request.getParameter("username");
+		String password = request.getParameter("password");
 
-        AdminDao dao = new AdminDao();
-        Admin admin = dao.validateAdminLogin(username, password);
+		AdminDao dao = new AdminDao();
+		Admin admin = dao.validateAdminLogin(username, password);
 
-        if (admin != null) {
-            HttpSession session = request.getSession();
+		if (admin != null) {
+			HttpSession session = request.getSession();
 
-            // Why "loggedInAdmin" as a different attribute name than
-            // "loggedInCustomer": this lets us later write a SEPARATE filter
-            // (AdminAuthFilter) that checks specifically for admin sessions,
-            // without any risk of confusing an admin session with a customer one.
-            session.setAttribute("loggedInAdmin", admin);
-            response.sendRedirect("admin/adminDashboard.jsp");
-        } else {
-            response.sendRedirect("admin/adminLogin.jsp?error=true");
-        }
-    }
+			// Why "loggedInAdmin" as a different attribute name than
+			// "loggedInCustomer": this lets us later write a SEPARATE filter
+			// (AdminAuthFilter) that checks specifically for admin sessions,
+			// without any risk of confusing an admin session with a customer one.
+			session.setAttribute("loggedInAdmin", admin);
+			response.sendRedirect("admin/adminDashboard.jsp");
+		} else {
+			response.sendRedirect("admin/adminLogin.jsp?error=true");
+		}
+	}
 }
