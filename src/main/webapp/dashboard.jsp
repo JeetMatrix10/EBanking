@@ -1,102 +1,91 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
-<%@ page import="model.Customer"%>
-<%@ page import="model.Account"%>
-<%@ page import="dao.AccountDao"%>
-<%@ page import="java.util.List"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.math.BigDecimal" %>
+<%@ page import="java.util.List" %>
+<%@ page import="dao.AccountDao" %>
+<%@ page import="model.Account" %>
+<%@ page import="model.Customer" %>
+<%@ page import="utilities.ViewUtil" %>
+<%
+    String ctx = request.getContextPath();
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>Dashboard - EBanking</title>
-</head>
-<body>
+    // AuthFilter guarantees a logged-in customer reaches this page.
+    Customer customer = (Customer) session.getAttribute("loggedInCustomer");
 
-	<%
-	// Why we read the session here without a null-check for "logged in":
-	// AuthFilter already guarantees this page is never reached unless
-	// loggedInCustomer exists in the session — so by the time this code
-	// runs, we can safely assume it's there.
+    // Fetched inline because login redirects straight here, with no servlet
+    // doGet() in front of it to supply the data (same reason as before).
+    List<Account> myAccounts = new AccountDao().getAccountsByCid(customer.getCid());
+    BigDecimal total = BigDecimal.ZERO;
+    for (Account a : myAccounts) {
+        total = total.add(a.getBalance());
+    }
 
-	Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+    // Set only when we arrive here via AccountServlet (/checkBalance).
+    Account checked = (Account) request.getAttribute("account");
+    Boolean accessDenied = (Boolean) request.getAttribute("accessDenied");
+%>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Dashboard"/>
+    <jsp:param name="nav" value="customer"/>
+    <jsp:param name="active" value="dashboard"/>
+</jsp:include>
 
-	// Why this fetch happens directly in the JSP here, unlike deposit/withdraw/FD:
-	// dashboard.jsp is reached straight after login (via sendRedirect), with
-	// no servlet doGet() step forwarding to it first — adding one just for
-	// this dropdown would mean rewriting the login flow. Keeping this one
-	// inline lookup is a reasonable, contained exception, consistent with
-	// dashboard.jsp already doing similar inline lookups elsewhere on this page.
-	AccountDao dashboardAccountDao = new AccountDao();
-	List<Account> myAccounts = dashboardAccountDao.getAccountsByCid(customer.getCid());
-	%>
+<h1 class="page-title">Welcome, <%= ViewUtil.escape(customer.getName()) %></h1>
+<p class="page-sub">Customer ID: <strong><%= ViewUtil.escape(customer.getCid()) %></strong></p>
 
-	<h2>
-		Welcome,
-		<%=customer.getName()%></h2>
-	<p>
-		Customer ID:
-		<%=customer.getCid()%></p>
+<% if (myAccounts.isEmpty()) { %>
+    <div class="alert alert-warning">You do not have an account yet. Please contact the bank to have one created.</div>
+<% } else { %>
+    <h2 class="section-title">Your accounts
+        <span class="muted">&middot; total balance <%= ViewUtil.money(total) %></span></h2>
+    <div class="grid grid-accounts">
+        <% for (Account a : myAccounts) { %>
+            <div class="account-card">
+                <div class="account-type"><%= ViewUtil.escape(a.getAccounttype()) %> account</div>
+                <div class="account-no"><%= ViewUtil.escape(a.getAccno()) %></div>
+                <div class="account-label">Available balance</div>
+                <div class="account-balance"><%= ViewUtil.money(a.getBalance()) %></div>
+            </div>
+        <% } %>
+    </div>
+<% } %>
 
-	<ul>
-		<li><a href="deposit">Deposit</a></li>
-		<li><a href="withdraw">Withdraw</a></li>
-		<li><a href="transfer">Fund Transfer</a></li>
-		<li><a href="viewTransactions">Transaction History</a></li>
+<h2 class="section-title">Quick actions</h2>
+<div class="grid grid-3">
+    <a class="tile" href="<%= ctx %>/deposit"><strong>Deposit</strong><span>Add money to an account</span></a>
+    <a class="tile" href="<%= ctx %>/withdraw"><strong>Withdraw</strong><span>Take money out</span></a>
+    <a class="tile" href="<%= ctx %>/transfer"><strong>Fund Transfer</strong><span>Send money to another account</span></a>
+    <a class="tile" href="<%= ctx %>/viewTransactions"><strong>Transaction History</strong><span>See past activity</span></a>
+    <a class="tile" href="<%= ctx %>/bookFD"><strong>Book Fixed Deposit</strong><span>Lock in a rate</span></a>
+    <a class="tile" href="<%= ctx %>/myFDs"><strong>My Fixed Deposits</strong><span>View your FDs</span></a>
+    <a class="tile" href="<%= ctx %>/prematureWithdrawFD"><strong>Withdraw FD Early</strong><span>Close an FD before maturity</span></a>
+    <a class="tile" href="<%= ctx %>/bookRD"><strong>Book Recurring Deposit</strong><span>Save every month</span></a>
+    <a class="tile" href="<%= ctx %>/myRDs"><strong>My Recurring Deposits</strong><span>View your RDs</span></a>
+    <a class="tile" href="<%= ctx %>/profile"><strong>My Profile</strong><span>Update contact details</span></a>
+</div>
 
-		<li><a href="bookFD">Fixed Deposit</a></li>
-		<li><a href="myFDs">My Fixed Deposits</a></li>
-		<li><a href="bookRD">Recurring Deposit</a></li>
-		<li><a href="myRDs">My Recurring Deposits</a></li>
-		<li><a href="profile">My Profile</a></li>
-		<li><a href="logout">Logout</a></li>
-	</ul>
+<% if (!myAccounts.isEmpty()) { %>
+    <h2 class="section-title">Check a single account</h2>
+    <div class="card">
+        <form action="<%= ctx %>/checkBalance" method="get" class="inline-form">
+            <select name="accno" required>
+                <% for (Account a : myAccounts) { %>
+                    <option value="<%= ViewUtil.escape(a.getAccno()) %>">
+                        <%= ViewUtil.escape(a.getAccno()) %> (<%= ViewUtil.escape(a.getAccounttype()) %>)
+                    </option>
+                <% } %>
+            </select>
+            <button class="btn btn-primary" type="submit">Check Balance</button>
+        </form>
 
-	<hr>
-	<h3>Check Account Balance</h3>
-	<form action="checkBalance" method="get">
-		<label>Account Number:</label> <select name="accno" required>
-			<%
-			for (Account acc : myAccounts) {
-			%>
-			<option value="<%=acc.getAccno()%>">
-				<%=acc.getAccno()%> (<%=acc.getAccounttype()%>)
-			</option>
-			<%
-			}
-			%>
-		</select> <input type="submit" value="Check Balance">
-	</form>
+        <% if (checked != null) { %>
+            <div class="alert alert-success mt">
+                Account <strong><%= ViewUtil.escape(checked.getAccno()) %></strong> balance:
+                <strong><%= ViewUtil.money(checked.getBalance()) %></strong>
+            </div>
+        <% } else if (accessDenied != null && accessDenied) { %>
+            <div class="alert alert-error mt">Access denied. This account does not belong to you.</div>
+        <% } %>
+    </div>
+<% } %>
 
-	<%
-	// Why this cast/check is wrapped in an if: this attribute is ONLY set
-	// when the page is reached via AccountServlet's forward() — a normal
-	// direct visit to dashboard.jsp (e.g. right after login) won't have it,
-	// so we must handle both cases without throwing a NullPointerException.
-	Account account = (Account) request.getAttribute("account");
-	Boolean accessDenied = (Boolean) request.getAttribute("accessDenied");
-	if (account != null) {
-	%>
-	<p>
-		<strong>Account No:</strong>
-		<%=account.getAccno()%></p>
-	<p>
-		<strong>Balance:</strong>
-		<%=account.getBalance()%></p>
-	<p>
-		<strong>Account Type:</strong>
-		<%=account.getAccounttype()%></p>
-	<%
-	} else if (accessDenied != null && accessDenied) {
-	%>
-	<p style="color: red;">Access denied. This account does not belong
-		to you.</p>
-	<%
-	} else if (request.getParameter("accno") != null) {
-	%>
-	<p>No account found with that number.</p>
-	<%
-	}
-	%>
-
-</body>
-</html>
+<jsp:include page="/includes/footer.jsp"/>

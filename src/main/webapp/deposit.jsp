@@ -1,48 +1,50 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
 <%@ page import="model.Account" %>
-
+<%@ page import="utilities.ViewUtil" %>
 <%
-    // Why the same null-check/redirect guard from profile.jsp is repeated
-    // here: same reasoning — if someone opens deposit.jsp directly instead
-    // of via /deposit, "accounts" would be null and the dropdown loop below
-    // would throw a NullPointerException.
+    String ctx = request.getContextPath();
+
+    // Same servlet-first guard as before: this page needs the "accounts"
+    // list that DepositServlet.doGet() prepares.
     List<Account> accounts = (List<Account>) request.getAttribute("accounts");
     if (accounts == null) {
         response.sendRedirect("deposit");
         return;
     }
 %>
-<!DOCTYPE html>
-<html>
-<head>
-<title>Deposit - EBanking</title>
-</head>
-<body>
-    <h2>Deposit Funds</h2>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Deposit"/>
+    <jsp:param name="nav" value="customer"/>
+    <jsp:param name="active" value="deposit"/>
+</jsp:include>
 
-    <form action="deposit" method="post">
-        <label>Account Number:</label><br>
-        <select name="accno" required>
-            <%
-                // Why we loop and print <option> tags in a scriptlet rather
-                // than a static dropdown: the options are entirely dynamic,
-                // different for every customer — there's no way to hardcode
-                // them in the JSP.
-                for (Account acc : accounts) {
-            %>
-                <option value="<%= acc.getAccno() %>">
-                    <%= acc.getAccno() %> (<%= acc.getAccounttype() %> - Balance: <%= acc.getBalance() %>)
-                </option>
-            <% } %>
-        </select><br><br>
-        
-        <label>Amount:</label><br>
-        <input type="number" step="0.01" min="0.01" name="amount" required><br><br>
+<div class="card form-card">
+    <h1 class="page-title">Deposit Funds</h1>
+    <p class="page-sub">Add money to one of your accounts.</p>
 
-        <input type="submit" value="Deposit">
+<% if (accounts.isEmpty()) { %>
+    <div class="alert alert-warning">You do not have an account yet.</div>
+<% } else { %>
+    <form action="<%= ctx %>/deposit" method="post">
+        <div class="form-group">
+            <label for="accno">Account</label>
+            <select id="accno" name="accno" required>
+                <% for (Account acc : accounts) { %>
+                    <option value="<%= ViewUtil.escape(acc.getAccno()) %>">
+                        <%= ViewUtil.escape(acc.getAccno()) %> - <%= ViewUtil.escape(acc.getAccounttype()) %>
+                        (<%= ViewUtil.money(acc.getBalance()) %>)
+                    </option>
+                <% } %>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount (&#8377;)</label>
+            <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Deposit</button>
     </form>
+<% } %>
+</div>
 
-    <p><a href="dashboard.jsp">Back to Dashboard</a></p>
-</body>
-</html>
+<jsp:include page="/includes/footer.jsp"/>

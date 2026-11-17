@@ -1,29 +1,34 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login - EBanking</title>
-</head>
-<body>
-    <h2>Customer Login</h2>
+<%
+    String ctx = request.getContextPath();
+%>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Login"/>
+    <jsp:param name="nav" value="public"/>
+    <jsp:param name="active" value="login"/>
+</jsp:include>
 
-    <!-- Why this check exists: reads the "error" query parameter LoginServlet
-         redirects with on failed login, and shows a message only if it's
-         present — so the form looks clean on a first visit. -->
+<div class="card form-card">
+    <h1 class="page-title">Customer Login</h1>
+    <p class="page-sub">Sign in with your Customer ID or registered email.</p>
+
     <% if ("true".equals(request.getParameter("error"))) { %>
-        <p style="color:red;">Invalid Customer ID or Password. Please try again.</p>
+        <div class="alert alert-error">Invalid Customer ID / email or password. Please try again.</div>
     <% } %>
 
-    <form action="login" method="post">
-        <label>Customer ID or Email:</label><br>
-        <input type="text" name="identifier" required><br><br>
-
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
-
-        <input type="submit" value="Login">
+    <form action="<%= ctx %>/login" method="post">
+        <div class="form-group">
+            <label for="identifier">Customer ID or Email</label>
+            <input type="text" id="identifier" name="identifier" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Login</button>
     </form>
 
-    <p>Don't have an account? <a href="register.jsp">Register here</a></p>
-</body>
-</html>
+    <p class="hint mt">Don't have an account? <a href="<%= ctx %>/register.jsp">Register here</a></p>
+</div>
+
+<jsp:include page="/includes/footer.jsp"/>
