@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import dao.CustomerDao;
 import model.Customer;
+import utilities.ValidationUtil;
 
 // Why @WebServlet("/register") instead of editing web.xml manually:
 // this annotation registers the URL mapping directly in the class itself —
@@ -37,6 +38,23 @@ public class RegisterServlet extends HttpServlet {
 		String panno = request.getParameter("panno");
 		String aadhaarno = request.getParameter("aadhaarno");
 		String password = request.getParameter("password");
+
+		// Why all these checks happen BEFORE building the Customer object
+		// or touching the DAO at all: fail fast — there's no reason to even
+		// attempt a database call if the input is already known to be
+		// invalid. This mirrors the same "check ownership before doing
+		// anything" principle used throughout the money-handling servlets.
+		if (!ValidationUtil.isNotEmpty(name)
+				|| !ValidationUtil.isValidPhone(phone)
+				|| !ValidationUtil.isValidEmail(email)
+				|| !ValidationUtil.isValidPan(panno)
+				|| !ValidationUtil.isValidAadhaar(aadhaarno)
+				|| !ValidationUtil.isNotEmpty(password)) {
+
+			request.setAttribute("success", false);
+			request.getRequestDispatcher("registerResult.jsp").forward(request, response);
+			return;
+		}
 
 		// Why we build a Customer object here rather than passing raw strings
 		// to the DAO: it keeps registerCustomer()'s method signature clean
