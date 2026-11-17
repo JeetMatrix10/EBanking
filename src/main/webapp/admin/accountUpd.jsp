@@ -1,23 +1,25 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Update Account - EBanking Admin</title>
-</head>
-<body>
-    <h2>Update Account Balance</h2>
-    <p><em>Note: this is a manual adjustment and will be logged as an ADMIN_ADJUSTMENT transaction.</em></p>
+<% String ctx = request.getContextPath(); %>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Update Balance"/>
+    <jsp:param name="nav" value="admin"/>
+    <jsp:param name="active" value="balance"/>
+</jsp:include>
 
-    <form action="../updateAccount" method="post">
-        <label>Account Number:</label><br>
-        <input type="text" name="accno" required><br><br>
-
-        <label>New Balance:</label><br>
-        <input type="number" step="0.01" name="balance" required><br><br>
-
-        <input type="submit" value="Update">
+<div class="card form-card">
+    <h1 class="page-title">Update Account Balance</h1>
+    <div class="alert alert-warning">This is a manual adjustment. It is logged as an ADMIN_ADJUSTMENT transaction.</div>
+    <form action="<%= ctx %>/updateAccount" method="post">
+        <div class="form-group">
+            <label for="accno">Account number</label>
+            <input type="text" id="accno" name="accno" placeholder="ACC00001" required>
+        </div>
+        <div class="form-group">
+            <label for="balance">New balance (&#8377;)</label>
+            <input type="number" id="balance" name="balance" step="0.01" required>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Update</button>
     </form>
+</div>
 
-    <p><a href="adminDashboard.jsp">Back to Admin Dashboard</a></p>
-</body>
-</html>
+<jsp:include page="/includes/footer.jsp"/>

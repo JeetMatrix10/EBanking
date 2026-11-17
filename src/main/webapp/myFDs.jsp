@@ -1,61 +1,45 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
-<%@ page import="java.util.List"%>
-<%@ page import="model.FixedDeposit"%>
-<!DOCTYPE html>
-<html>
-<head>
-<title>My Fixed Deposits - EBanking</title>
-</head>
-<body>
-	<h2>My Fixed Deposits</h2>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="model.FixedDeposit" %>
+<%@ page import="utilities.ViewUtil" %>
+<%
+    String ctx = request.getContextPath();
+    List<FixedDeposit> fds = (List<FixedDeposit>) request.getAttribute("fds");
+    if (fds == null) { response.sendRedirect(ctx + "/myFDs"); return; }
+%>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="My Fixed Deposits"/>
+    <jsp:param name="nav" value="customer"/>
+    <jsp:param name="active" value="fd"/>
+</jsp:include>
 
-	<%
-        // Why the same "if null, redirect to servlet" guard from
-        // profile.jsp is used here too: this JSP has the exact same risk —
-        // if opened directly instead of via /myFDs, "fds" would be null and
-        // the loop below would throw a NullPointerException.
-        List<FixedDeposit> fds = (List<FixedDeposit>) request.getAttribute("fds");
-        if (fds == null) {
-            response.sendRedirect("myFDs");
-            return;
-        }
-    %>
+<h1 class="page-title">My Fixed Deposits</h1>
+<div class="actions">
+    <a class="btn btn-primary" href="<%= ctx %>/bookFD">Book new FD</a>
+    <a class="btn btn-secondary" href="<%= ctx %>/prematureWithdrawFD">Withdraw an FD early</a>
+</div>
 
-	<% if (fds.isEmpty()) { %>
-	<p>You have no Fixed Deposits yet.</p>
-	<% } else { %>
-	<table border="1" cellpadding="5">
-		<tr>
-			<th>FD ID</th>
-			<th>Account No</th>
-			<th>Amount</th>
-			<th>Years</th>
-			<th>Interest Rate</th>
-			<th>Booked On</th>
-			<th>Matures On</th>
-			<th>Status</th>
-		</tr>
-		<% for (FixedDeposit fd : fds) { %>
-		<tr>
-			<td><%= fd.getFdId() %></td>
-			<td><%= fd.getAccno() %></td>
-			<td><%= fd.getAmount() %></td>
-			<td><%= fd.getNoOfYears() %></td>
-			<td><%= fd.getInterestRate() %>%</td>
-			<td><%= fd.getBookDate() %></td>
-			<td><%= fd.getMaturityDate() %></td>
-			<td><%= fd.getStatus() %></td>
-		</tr>
-		<% } %>
-	</table>
-	<% } %>
+<% if (fds.isEmpty()) { %>
+    <div class="alert alert-warning mt">You have no Fixed Deposits yet.</div>
+<% } else { %>
+    <div class="card mt table-wrap">
+        <table class="data">
+            <tr><th>FD ID</th><th>Account</th><th class="num">Amount</th><th>Years</th>
+                <th class="num">Rate</th><th>Booked</th><th>Matures</th><th>Status</th></tr>
+            <% for (FixedDeposit fd : fds) { %>
+                <tr>
+                    <td><%= fd.getFdId() %></td>
+                    <td><%= ViewUtil.escape(fd.getAccno()) %></td>
+                    <td class="num"><%= ViewUtil.money(fd.getAmount()) %></td>
+                    <td><%= fd.getNoOfYears() %></td>
+                    <td class="num"><%= fd.getInterestRate() %>%</td>
+                    <td><%= ViewUtil.dateTime(fd.getBookDate()) %></td>
+                    <td><%= ViewUtil.dateTime(fd.getMaturityDate()) %></td>
+                    <td><span class="badge <%= ViewUtil.badge(fd.getStatus()) %>"><%= ViewUtil.escape(fd.getStatus()) %></span></td>
+                </tr>
+            <% } %>
+        </table>
+    </div>
+<% } %>
 
-	<p>
-		<a href="prematureWithdrawFD">Withdraw an FD Early</a>
-	</p>
-	<p>
-		<a href="dashboard.jsp">Back to Dashboard</a>
-	</p>
-</body>
-</html>
+<jsp:include page="/includes/footer.jsp"/>

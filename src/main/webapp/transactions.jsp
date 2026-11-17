@@ -1,81 +1,61 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
-<%@ page import="java.util.List"%>
-<%@ page import="model.Account"%>
-<%@ page import="model.Transaction"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Account" %>
+<%@ page import="model.Transaction" %>
+<%@ page import="utilities.ViewUtil" %>
 <%
+    String ctx = request.getContextPath();
     List<Account> accounts = (List<Account>) request.getAttribute("accounts");
-    if (accounts == null) {
-        response.sendRedirect("viewTransactions");
-        return;
-    }
+    if (accounts == null) { response.sendRedirect(ctx + "/viewTransactions"); return; }
+    List<Transaction> transactions = (List<Transaction>) request.getAttribute("transactions");
+    Boolean accessDenied = (Boolean) request.getAttribute("accessDenied");
+    String selected = (String) request.getAttribute("accno");
 %>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Transaction History"/>
+    <jsp:param name="nav" value="customer"/>
+    <jsp:param name="active" value="history"/>
+</jsp:include>
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>Transaction History - EBanking</title>
-</head>
-<body>
-	<h2>Transaction History</h2>
+<h1 class="page-title">Transaction History</h1>
+<p class="page-sub">Pick an account to see its activity.</p>
 
-	<form action="viewTransactions" method="get">
-		<label>Account Number:</label> <select name="accno" required>
-			<% for (Account acc : accounts) { %>
-			<option value="<%= acc.getAccno() %>">
-				<%= acc.getAccno() %> (<%= acc.getAccounttype() %>)
-			</option>
-			<% } %>
-		</select> <input type="submit" value="View">
-	</form>
+<div class="card">
+    <form action="<%= ctx %>/viewTransactions" method="get" class="inline-form">
+        <select name="accno" required>
+            <% for (Account acc : accounts) { %>
+                <option value="<%= ViewUtil.escape(acc.getAccno()) %>"
+                    <%= acc.getAccno().equals(selected) ? "selected" : "" %>>
+                    <%= ViewUtil.escape(acc.getAccno()) %> (<%= ViewUtil.escape(acc.getAccounttype()) %>)
+                </option>
+            <% } %>
+        </select>
+        <button class="btn btn-primary" type="submit">View</button>
+    </form>
+</div>
 
-	<%
-        // Why request.getAttribute, not request.getParameter, here: this page
-        // is reached via forward() from the servlet, which already fetched
-        // and set "transactions" as an ATTRIBUTE (a Java object), not a raw
-        // request parameter (a string). getParameter would only work for
-        // form-submitted strings, not for a List<Transaction> object.
-        List<Transaction> transactions = (List<Transaction>) request.getAttribute("transactions");
-        Boolean accessDenied = (Boolean) request.getAttribute("accessDenied");
-    %>
+<% if (accessDenied != null && accessDenied) { %>
+    <div class="alert alert-error mt">Access denied. This account does not belong to you.</div>
+<% } else if (transactions != null && !transactions.isEmpty()) { %>
+    <div class="card mt table-wrap">
+        <table class="data">
+            <tr><th>ID</th><th>Date</th><th>Type</th><th>From</th><th>To</th><th class="num">Amount</th></tr>
+            <% for (Transaction t : transactions) {
+                   boolean received = "TRANSFER".equals(t.getType()) && selected != null
+                                      && selected.equals(t.getBenaccno()); %>
+                <tr>
+                    <td><%= t.getTransactionId() %></td>
+                    <td><%= ViewUtil.dateTime(t.getTransdt()) %></td>
+                    <td><%= ViewUtil.escape(t.getType()) %><%= received ? " (received)" : "" %></td>
+                    <td><%= ViewUtil.escape(t.getSaccno()) %></td>
+                    <td><%= t.getBenaccno() != null ? ViewUtil.escape(t.getBenaccno()) : "-" %></td>
+                    <td class="num"><%= ViewUtil.money(t.getAmount()) %></td>
+                </tr>
+            <% } %>
+        </table>
+    </div>
+<% } else if (selected != null) { %>
+    <div class="alert alert-warning mt">No transactions found for this account.</div>
+<% } %>
 
-	<% if (accessDenied != null && accessDenied) { %>
-	<p style="color: red;">Access denied. This account does not belong
-		to you.</p>
-
-	<% } else if (transactions != null && !transactions.isEmpty()) { %>
-	<table border="1" cellpadding="5">
-		<tr>
-			<th>Transaction ID</th>
-			<th>From</th>
-			<th>To</th>
-			<th>Amount</th>
-			<th>Type</th>
-			<th>Date</th>
-		</tr>
-		<%
-                // Why a plain for-loop instead of JSTL's <c:forEach>: JSTL
-                // needs an extra tag library import/setup step — for a
-                // project this size, a scriptlet loop is simpler and works
-                // identically; we can switch to JSTL later if you want cleaner JSPs.
-                for (Transaction t : transactions) {
-            %>
-		<tr>
-			<td><%= t.getTransactionId() %></td>
-			<td><%= t.getSaccno() %></td>
-			<td><%= t.getBenaccno() != null ? t.getBenaccno() : "-" %></td>
-			<td><%= t.getAmount() %></td>
-			<td><%= t.getType() %></td>
-			<td><%= t.getTransdt() %></td>
-		</tr>
-		<% } %>
-	</table>
-	<% } else if (request.getAttribute("accno") != null) { %>
-	<p>No transactions found for this account.</p>
-	<% } %>
-
-	<p>
-		<a href="dashboard.jsp">Back to Dashboard</a>
-	</p>
-</body>
-</html>
+<jsp:include page="/includes/footer.jsp"/>

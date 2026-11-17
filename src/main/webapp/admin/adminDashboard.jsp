@@ -1,30 +1,23 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
-<%@ page import="model.Admin"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="model.Admin" %>
+<%@ page import="utilities.ViewUtil" %>
 <%
-// Why session.getAttribute("loggedInAdmin") is safe to assume non-null
-// here without a manual check: AdminAuthFilter already guarantees this
-// page is unreachable without a valid admin session — by the time this
-// code runs, the filter has already done that verification for us.
-Admin admin = (Admin) session.getAttribute("loggedInAdmin");
+    String ctx = request.getContextPath();
+    Admin admin = (Admin) session.getAttribute("loggedInAdmin");   // AdminAuthFilter guarantees this exists
 %>
-<!DOCTYPE html>
-<html>
-<head>
-<title>Admin Dashboard - EBanking</title>
-</head>
-<body>
-	<h2>
-		Welcome,
-		<%=admin.getUsername()%>
-		(Admin)
-	</h2>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Admin Dashboard"/>
+    <jsp:param name="nav" value="admin"/>
+    <jsp:param name="active" value="dashboard"/>
+</jsp:include>
 
-	<ul>
-		<li><a href="account.jsp">Create Customer Account</a></li>
-		<li><a href="accountUpd.jsp">Update Account Balance</a></li>
-		<li><a href="users.jsp">Manage Customers (Update/Delete)</a></li>
-		<li><a href="../adminLogout">Logout</a></li>
-	</ul>
-</body>
-</html>
+<h1 class="page-title">Welcome, <%= ViewUtil.escape(admin.getUsername()) %></h1>
+<p class="page-sub">Administration</p>
+
+<div class="grid grid-3">
+    <a class="tile" href="<%= ctx %>/admin/account.jsp"><strong>Create Account</strong><span>Open a new account for a customer</span></a>
+    <a class="tile" href="<%= ctx %>/admin/accountUpd.jsp"><strong>Update Balance</strong><span>Manual balance adjustment</span></a>
+    <a class="tile" href="<%= ctx %>/admin/users.jsp"><strong>Manage Customers</strong><span>Update or delete a customer</span></a>
+</div>
+
+<jsp:include page="/includes/footer.jsp"/>

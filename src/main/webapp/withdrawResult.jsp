@@ -1,41 +1,22 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%
-Boolean success = (Boolean) request.getAttribute("success");
-String errorMessage = (String) request.getAttribute("errorMessage");
-if (success == null) {
-	response.sendRedirect("withdraw");
-	return;
-}
+    Boolean success = (Boolean) request.getAttribute("success");
+    String errorMessage = (String) request.getAttribute("errorMessage");
+    if (success == null) { response.sendRedirect(request.getContextPath() + "/withdraw"); return; }
+    String ok = success ? "true" : "false";
+    String rtitle = success ? "Withdrawal successful" : "Withdrawal failed";
+    // The insufficient-balance message carries the available amount, so show it directly.
+    String msg = success ? "The amount has been withdrawn from your account."
+               : (errorMessage != null ? errorMessage : "We could not process the withdrawal. Please try again.");
 %>
-<!DOCTYPE html>
-<html>
-<head>
-<title>Withdrawal Result - EBanking</title>
-</head>
-<body>
-	<%
-	if (success) {
-	%>
-	<h3>Withdrawal successful!</h3>
-	<%
-	} else if (errorMessage != null) {
-	%>
-	<!-- Why this branch exists separately from the generic failure
-             below: InsufficientBalanceException carries a SPECIFIC,
-             meaningful message ("Available: X") that's worth showing the
-             customer directly, unlike a generic system error where there's
-             nothing more useful to say. -->
-	<h3>
-		Withdrawal failed:
-		<%=errorMessage%></h3>
-	<%
-	} else {
-	%>
-	<h3>Withdrawal failed due to a system error. Please try again.</h3>
-	<%
-	}
-	%>
-	<a href="dashboard.jsp">Back to Dashboard</a>
-</body>
-</html>
+<jsp:include page="/includes/header.jsp">
+    <jsp:param name="title" value="Withdraw"/>
+    <jsp:param name="nav" value="customer"/>
+    <jsp:param name="active" value="withdraw"/>
+</jsp:include>
+<jsp:include page="/includes/result.jsp">
+    <jsp:param name="ok" value="<%= ok %>"/>
+    <jsp:param name="rtitle" value="<%= rtitle %>"/>
+    <jsp:param name="message" value="<%= msg %>"/>
+</jsp:include>
+<jsp:include page="/includes/footer.jsp"/>
