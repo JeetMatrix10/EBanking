@@ -25,6 +25,17 @@ public class PasswordUtil {
 	// internally compare it against the stored hash. BCrypt.checkpw()
 	// handles extracting the original salt from the stored hash automatically.
 	public static boolean checkPassword(String plainPassword, String hashedPassword) {
-		return BCrypt.checkpw(plainPassword, hashedPassword);
+	    if (plainPassword == null || hashedPassword == null) {
+	        return false;
+	    }
+	    try {
+	        return BCrypt.checkpw(plainPassword, hashedPassword);
+	    } catch (IllegalArgumentException e) {
+	        // The stored value isn't a valid BCrypt hash (plain text, truncated,
+	        // or corrupted). Treat it as a failed login instead of crashing, and
+	        // log the reason server-side. The hash itself is never printed.
+	        System.out.println("Stored password is not a valid BCrypt hash: " + e.getMessage());
+	        return false;
+	    }
 	}
 }
