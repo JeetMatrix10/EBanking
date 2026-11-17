@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -40,8 +41,15 @@ public class WithdrawServlet extends HttpServlet {
 			throws ServletException, IOException {
 
 		String accno = request.getParameter("accno");
-		String amountStr = request.getParameter("amount");
-		BigDecimal amount = new BigDecimal(amountStr);
+		BigDecimal amount = ValidationUtil.parsePositiveAmount(request.getParameter("amount"));
+
+		if (amount == null) {
+			request.setAttribute("success", false);
+			request.setAttribute("errorMessage",
+					"Enter a valid amount greater than zero, with at most 2 decimal places.");
+			request.getRequestDispatcher("withdrawResult.jsp").forward(request, response);
+			return;
+		}
 
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");

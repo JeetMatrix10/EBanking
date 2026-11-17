@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -38,58 +39,55 @@ public class BookFDServlet extends HttpServlet {
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	        throws ServletException, IOException {
 
-		String accno = request.getParameter("accno");
-		String yearsStr = request.getParameter("years");
-		String interestRateStr = request.getParameter("interestRate");
-		String amountStr = request.getParameter("amount");
+	    String accno = request.getParameter("accno");
+	    boolean testMode = "on".equals(request.getParameter("testMode"));
 
-		// Why "testMode" is read this way: an unchecked HTML checkbox sends
-		// NO parameter at all (not "false" — nothing), so getParameter()
-		// returns null. We treat "the checkbox value equals 'on'" as true,
-		// and null/anything else as false.
-		boolean testMode = "on".equals(request.getParameter("testMode"));
+	    Integer years = ValidationUtil.parsePositiveInteger(request.getParameter("years"), 30);
+	    BigDecimal rate = ValidationUtil.parseRate(request.getParameter("interestRate"));
+	    BigDecimal amount = ValidationUtil.parsePositiveAmount(request.getParameter("amount"));
 
-		HttpSession session = request.getSession();
-		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+	    String error = null;
+	    if (years == null) {
+	        error = "Enter the number of years as a whole number from 1 to 30.";
+	    } else if (rate == null) {
+	        error = "Enter an interest rate above 0 and up to 20 percent.";
+	    } else if (amount == null) {
+	        error = "Enter a valid amount greater than zero, with at most 2 decimal places.";
+	    }
 
-		AccountDao accountDao = new AccountDao();
+	    if (error != null) {
+	        request.setAttribute("success", false);
+	        request.setAttribute("errorMessage", error);
+	        request.getRequestDispatcher("fdResult.jsp").forward(request, response);
+	        return;
+	    }
 
-		// Why the SAME ownership check from deposit/withdraw is repeated
-		// here: FD booking deducts money from an account, same risk profile
-		// as deposit/withdraw — anyone touching a real account's balance
-		// needs this guard, no exceptions.
-		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-			request.setAttribute("success", false);
-			request.getRequestDispatcher("fdResult.jsp").forward(request, response);
-			return;
-		}
+	    HttpSession session = request.getSession();
+	    Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-		FixedDeposit fd = new FixedDeposit();
-		fd.setCid(loggedInCustomer.getCid());
-		fd.setAccno(accno);
-		fd.setAmount(new BigDecimal(amountStr));
-		fd.setNoOfYears(Integer.parseInt(yearsStr));
-		fd.setInterestRate(new BigDecimal(interestRateStr));
+	    AccountDao accountDao = new AccountDao();
+	    if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+	        request.setAttribute("success", false);
+	        request.getRequestDispatcher("fdResult.jsp").forward(request, response);
+	        return;
+	    }
 
-		// Why Date.valueOf(LocalDate.now()) here for bookDate, instead of a
-		// form field asking the customer to type today's date: it should
-		// never be user-editable — the FD is booked at whatever moment this
-		// servlet runs, not at a date someone could otherwise fake to be
-		// earlier or later.
-		// fd.setBookDate(Date.valueOf(java.time.LocalDate.now()));
-		fd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+	    FixedDeposit fd = new FixedDeposit();
+	    fd.setCid(loggedInCustomer.getCid());
+	    fd.setAccno(accno);
+	    fd.setAmount(amount);
+	    fd.setNoOfYears(years);
+	    fd.setInterestRate(rate);
+	    fd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
 
-		FixedDepositDao dao = new FixedDepositDao();
-		boolean success = dao.bookFD(fd, testMode);
+	    boolean success = new FixedDepositDao().bookFD(fd, testMode);
 
-		request.setAttribute("success", success);
-		if (success && testMode) {
-			request.setAttribute("testMinutesWait", Integer.parseInt(yearsStr) * 5);
-		}
-
-		RequestDispatcher dispatcher = request.getRequestDispatcher("fdResult.jsp");
-		dispatcher.forward(request, response);
+	    request.setAttribute("success", success);
+	    if (success && testMode) {
+	        request.setAttribute("testMinutesWait", years * 5);
+	    }
+	    request.getRequestDispatcher("fdResult.jsp").forward(request, response);
 	}
 }

@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -38,40 +39,54 @@ public class BookRDServlet extends HttpServlet {
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	        throws ServletException, IOException {
 
-		String accno = request.getParameter("accno");
-		String monthsStr = request.getParameter("months");
-		String amountStr = request.getParameter("amount");
-		String interestRateStr = request.getParameter("interestRate");
-		boolean testMode = "on".equals(request.getParameter("testMode"));
+	    String accno = request.getParameter("accno");
+	    boolean testMode = "on".equals(request.getParameter("testMode"));
 
-		HttpSession session = request.getSession();
-		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+	    Integer months = ValidationUtil.parsePositiveInteger(request.getParameter("months"), 120);
+	    BigDecimal rate = ValidationUtil.parseRate(request.getParameter("interestRate"));
+	    BigDecimal amount = ValidationUtil.parsePositiveAmount(request.getParameter("amount"));
 
-		AccountDao accountDao = new AccountDao();
-		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-			request.setAttribute("success", false);
-			request.getRequestDispatcher("rdResult.jsp").forward(request, response);
-			return;
-		}
+	    String error = null;
+	    if (months == null) {
+	        error = "Enter the number of months as a whole number from 1 to 120.";
+	    } else if (rate == null) {
+	        error = "Enter an interest rate above 0 and up to 20 percent.";
+	    } else if (amount == null) {
+	        error = "Enter a valid monthly amount greater than zero, with at most 2 decimal places.";
+	    }
 
-		RecurringDeposit rd = new RecurringDeposit();
-		rd.setCid(loggedInCustomer.getCid());
-		rd.setAccno(accno);
-		rd.setMonthlyAmount(new BigDecimal(amountStr));
-		rd.setNoOfMonths(Integer.parseInt(monthsStr));
-		rd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
-		rd.setInterestRate(new BigDecimal(interestRateStr));
-		rd.setTestMode(testMode);
+	    if (error != null) {
+	        request.setAttribute("success", false);
+	        request.setAttribute("errorMessage", error);
+	        request.getRequestDispatcher("rdResult.jsp").forward(request, response);
+	        return;
+	    }
 
-		RecurringDepositDao dao = new RecurringDepositDao();
-		boolean success = dao.bookRD(rd, testMode);
+	    HttpSession session = request.getSession();
+	    Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
-		request.setAttribute("success", success);
-		request.setAttribute("testMode", testMode);
+	    AccountDao accountDao = new AccountDao();
+	    if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
+	        request.setAttribute("success", false);
+	        request.getRequestDispatcher("rdResult.jsp").forward(request, response);
+	        return;
+	    }
 
-		RequestDispatcher dispatcher = request.getRequestDispatcher("rdResult.jsp");
-		dispatcher.forward(request, response);
+	    RecurringDeposit rd = new RecurringDeposit();
+	    rd.setCid(loggedInCustomer.getCid());
+	    rd.setAccno(accno);
+	    rd.setMonthlyAmount(amount);
+	    rd.setNoOfMonths(months);
+	    rd.setInterestRate(rate);
+	    rd.setTestMode(testMode);
+	    rd.setBookDate(Timestamp.valueOf(java.time.LocalDateTime.now()));
+
+	    boolean success = new RecurringDepositDao().bookRD(rd, testMode);
+
+	    request.setAttribute("success", success);
+	    request.setAttribute("testMode", testMode);
+	    request.getRequestDispatcher("rdResult.jsp").forward(request, response);
 	}
 }

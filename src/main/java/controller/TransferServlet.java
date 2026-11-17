@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -41,35 +42,42 @@ public class TransferServlet extends HttpServlet {
 
 		String saccno = request.getParameter("saccno");
 		String benaccno = request.getParameter("benaccno");
-		String amountStr = request.getParameter("amount");
-		BigDecimal amount = new BigDecimal(amountStr);
+		if (benaccno != null) {
+			benaccno = benaccno.trim().toUpperCase();   // match the stored ACC00001 format
+		}
+		BigDecimal amount = ValidationUtil.parsePositiveAmount(request.getParameter("amount"));
+
+		String error = null;
+		if (!ValidationUtil.isValidAccno(benaccno)) {
+			error = "Enter a valid beneficiary account number (for example ACC00001).";
+		} else if (benaccno.equals(saccno)) {
+			// Why block this: a transfer to the same account debits and credits
+			// one row and logs a meaningless TRANSFER entry.
+			error = "You cannot transfer to the same account.";
+		} else if (amount == null) {
+			error = "Enter a valid amount greater than zero, with at most 2 decimal places.";
+		}
+
+		if (error != null) {
+			request.setAttribute("success", false);
+			request.setAttribute("errorMessage", error);
+			request.getRequestDispatcher("transferResult.jsp").forward(request, response);
+			return;
+		}
 
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
 		AccountDao accountDao = new AccountDao();
-
-		// Why only saccno is checked, not benaccno: you're only allowed to
-		// move money OUT of your own account — sending it TO someone else's
-		// account is the entire purpose of a transfer, so benaccno belonging
-		// to a different customer is expected and correct, not a violation.
 		if (!accountDao.isAccountOwnedByCustomer(saccno, loggedInCustomer.getCid())) {
-			// out.println("<h3>Access denied. The sending account does not belong to
-			// you.</h3>");
-			// out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-			// return;
 			request.setAttribute("success", false);
 			request.getRequestDispatcher("transferResult.jsp").forward(request, response);
 			return;
 		}
 
-		TransactionDao dao = new TransactionDao();
-		TransferResult result = dao.transfer(saccno, benaccno, amount);
-
+		TransferResult result = new TransactionDao().transfer(saccno, benaccno, amount);
 		request.setAttribute("success", result.isSuccess());
 		request.setAttribute("warningMessage", result.getWarningMessage());
-
-		RequestDispatcher dispatcher = request.getRequestDispatcher("transferResult.jsp");
-		dispatcher.forward(request, response);
+		request.getRequestDispatcher("transferResult.jsp").forward(request, response);
 	}
 }

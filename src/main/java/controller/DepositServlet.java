@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -43,31 +44,31 @@ public class DepositServlet extends HttpServlet {
 			throws ServletException, IOException {
 
 		String accno = request.getParameter("accno");
-		String amountStr = request.getParameter("amount");
-		BigDecimal amount = new BigDecimal(amountStr);
+		BigDecimal amount = ValidationUtil.parsePositiveAmount(request.getParameter("amount"));
+
+		// Why this runs before the ownership check and any DAO call: bad input
+		// should fail cheaply, and getting here with a null amount used to mean
+		// an uncaught NumberFormatException instead of a clean message.
+		if (amount == null) {
+			request.setAttribute("success", false);
+			request.setAttribute("errorMessage",
+					"Enter a valid amount greater than zero, with at most 2 decimal places.");
+			request.getRequestDispatcher("depositResult.jsp").forward(request, response);
+			return;
+		}
 
 		HttpSession session = request.getSession();
 		Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
 
 		AccountDao accountDao = new AccountDao();
-
-		// Why this check happens BEFORE calling TransactionDao at all: no
-		// reason to even attempt the deposit if ownership fails — fail fast,
-		// before touching the transaction/balance logic.
 		if (!accountDao.isAccountOwnedByCustomer(accno, loggedInCustomer.getCid())) {
-			// out.println("<h3>Access denied. This account does not belong to you.</h3>");
-			// out.println("<a href='dashboard.jsp'>Back to Dashboard</a>");
-			// return;
 			request.setAttribute("success", false);
 			request.getRequestDispatcher("depositResult.jsp").forward(request, response);
 			return;
 		}
 
 		TransactionDao dao = new TransactionDao();
-		boolean success = dao.deposit(accno, amount);
-
-		request.setAttribute("success", success);
-		RequestDispatcher dispatcher = request.getRequestDispatcher("depositResult.jsp");
-		dispatcher.forward(request, response);
+		request.setAttribute("success", dao.deposit(accno, amount));
+		request.getRequestDispatcher("depositResult.jsp").forward(request, response);
 	}
 }
