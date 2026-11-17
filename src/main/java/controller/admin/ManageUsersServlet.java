@@ -1,6 +1,7 @@
 package controller.admin;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -32,16 +33,25 @@ public class ManageUsersServlet extends HttpServlet {
 			String phone = request.getParameter("phone");
 			String email = request.getParameter("email");
 
-			// Fetch the existing customer so we don't lose their current password.
-			// Our updated DAO requires 4 parameters now, including the password.
-			Customer existingCustomer = dao.getCustomerByCid(cid);
-
-			if (existingCustomer != null) {
-				// Pass the existing password right back into the update method
-				boolean success = dao.updateCustomer(cid, phone, email, existingCustomer.getPassword());
-				message = success ? "Customer updated successfully." : "Update failed. Please try again.";
+			if (!ValidationUtil.isValidCid(cid)) {
+				message = "Update failed. Enter a valid Customer ID.";
+			} else if (!ValidationUtil.isValidPhone(phone)) {
+				message = "Update failed. Phone must be exactly 10 digits.";
+			} else if (!ValidationUtil.isValidEmail(email)) {
+				message = "Update failed. Enter a valid email address.";
 			} else {
-				message = "Update failed. Customer ID not found.";
+				// Fetch the existing customer so we don't lose their current password.
+				// Our updated DAO requires 4 parameters now, including the password.
+				Customer existingCustomer = dao.getCustomerByCid(cid.trim());
+
+				if (existingCustomer != null) {
+					// Pass the existing password right back into the update method
+					boolean success = dao.updateCustomer(cid.trim(), phone.trim(), email.trim(),
+							existingCustomer.getPassword());
+					message = success ? "Customer updated successfully." : "Update failed. Please try again.";
+				} else {
+					message = "Update failed. Customer ID not found.";
+				}
 			}
 
 		} else if ("delete".equals(action)) {

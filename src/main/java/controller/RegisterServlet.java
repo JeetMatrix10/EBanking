@@ -44,14 +44,24 @@ public class RegisterServlet extends HttpServlet {
 		// attempt a database call if the input is already known to be
 		// invalid. This mirrors the same "check ownership before doing
 		// anything" principle used throughout the money-handling servlets.
-		if (!ValidationUtil.isNotEmpty(name)
-				|| !ValidationUtil.isValidPhone(phone)
-				|| !ValidationUtil.isValidEmail(email)
-				|| !ValidationUtil.isValidPan(panno)
-				|| !ValidationUtil.isValidAadhaar(aadhaarno)
-				|| !ValidationUtil.isNotEmpty(password)) {
+		String error = null;
+		if (!ValidationUtil.isNotEmpty(name)) {
+			error = "Enter your full name.";
+		} else if (!ValidationUtil.isValidPhone(phone)) {
+			error = "Phone must be exactly 10 digits.";
+		} else if (!ValidationUtil.isValidEmail(email)) {
+			error = "Enter a valid email address.";
+		} else if (!ValidationUtil.isValidPan(panno)) {
+			error = "PAN must look like ABCDE1234F.";
+		} else if (!ValidationUtil.isValidAadhaar(aadhaarno)) {
+			error = "Aadhaar must be exactly 12 digits.";
+		} else if (!ValidationUtil.isValidPassword(password)) {
+			error = "Password must be at least " + ValidationUtil.MIN_PASSWORD_LENGTH + " characters.";
+		}
 
+		if (error != null) {
 			request.setAttribute("success", false);
+			request.setAttribute("errorMessage", error);
 			request.getRequestDispatcher("registerResult.jsp").forward(request, response);
 			return;
 		}
@@ -60,7 +70,8 @@ public class RegisterServlet extends HttpServlet {
 		// to the DAO: it keeps registerCustomer()'s method signature clean
 		// (one object, not seven separate string parameters), and matches
 		// what the DAO already expects.
-		Customer customer = new Customer(name, phone, email, panno, aadhaarno, password);
+		Customer customer = new Customer(name.trim(), phone.trim(), email.trim(),
+				panno.trim().toUpperCase(), aadhaarno.trim(), password);
 
 		CustomerDao dao = new CustomerDao();
 		String generatedCid = dao.registerCustomer(customer);
@@ -70,17 +81,17 @@ public class RegisterServlet extends HttpServlet {
 		// the whole flow works end-to-end before we build a polished
 		// success/failure JSP page. We'll replace this with proper page
 		// forwarding once the core flow is proven.
-//		response.setContentType("text/html");
-//		PrintWriter out = response.getWriter();
-//
-//		if (generatedCid != null) {
-//			out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
-//			out.println("<p>Please save this ID — you'll need it to log in.</p>");
-//			out.println("<a href='login.jsp'>Go to Login</a>");
-//		} else {
-//			out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
-//			out.println("<a href='register.jsp'>Try Again</a>");
-//		}
+		//		response.setContentType("text/html");
+		//		PrintWriter out = response.getWriter();
+		//
+		//		if (generatedCid != null) {
+		//			out.println("<h3>Registration successful! Your Customer ID is: " + generatedCid + "</h3>");
+		//			out.println("<p>Please save this ID — you'll need it to log in.</p>");
+		//			out.println("<a href='login.jsp'>Go to Login</a>");
+		//		} else {
+		//			out.println("<h3>Registration failed. Please check your inputs and try again.</h3>");
+		//			out.println("<a href='register.jsp'>Try Again</a>");
+		//		}
 		// Why this replaces the old out.println() block entirely: this
 		// servlet now follows the SAME pattern as every other servlet in
 		// the project (ProfileServlet, TransactionServlet, the dropdown

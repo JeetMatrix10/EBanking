@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -52,14 +53,34 @@ public class ProfileServlet extends HttpServlet {
 		String phone = request.getParameter("phone");
 		String email = request.getParameter("email");
 		String newPassword = request.getParameter("password");
+		boolean changingPassword = newPassword != null && !newPassword.trim().isEmpty();
 
-//		// Determine which password to save based on what the user submitted
-//		String finalPassword;
-//		if (newPassword == null || newPassword.trim().isEmpty()) {
-//			finalPassword = loggedInCustomer.getPassword(); // Keep old password
-//		} else {
-//			finalPassword = newPassword.trim(); // Use new password
-//		}
+		String error = null;
+		if (!ValidationUtil.isValidPhone(phone)) {
+			error = "Phone must be exactly 10 digits.";
+		} else if (!ValidationUtil.isValidEmail(email)) {
+			error = "Enter a valid email address.";
+		} else if (changingPassword && !ValidationUtil.isValidPassword(newPassword)) {
+			error = "New password must be at least " + ValidationUtil.MIN_PASSWORD_LENGTH + " characters.";
+		}
+
+		if (error != null) {
+			request.setAttribute("updateSuccess", false);
+			request.setAttribute("errorMessage", error);
+			request.setAttribute("customer", loggedInCustomer);
+			request.getRequestDispatcher("profile.jsp").forward(request, response);
+			return;
+		}
+		phone = phone.trim();
+		email = email.trim();
+
+		//	 	Determine which password to save based on what the user submitted
+		//		String finalPassword;
+		//		if (newPassword == null || newPassword.trim().isEmpty()) {
+		//			finalPassword = loggedInCustomer.getPassword(); // Keep old password
+		//		} else {
+		//			finalPassword = newPassword.trim(); // Use new password
+		//		}
 		String finalPassword;
 		if (newPassword == null || newPassword.trim().isEmpty()) {
 			// Why we do NOT re-hash here: loggedInCustomer.getPassword() already

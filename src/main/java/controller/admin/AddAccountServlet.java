@@ -1,6 +1,7 @@
 package controller.admin;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 import java.sql.Date;
 
@@ -22,25 +23,35 @@ public class AddAccountServlet extends HttpServlet {
 			throws ServletException, IOException {
 
 		String cid = request.getParameter("cid");
-		String opendateStr = request.getParameter("opendate");
-		String balanceStr = request.getParameter("balance");
+		if (cid != null) {
+			cid = cid.trim().toUpperCase();
+		}
+		Date opendate = ValidationUtil.parseOpenDate(request.getParameter("opendate"));
+		BigDecimal balance = ValidationUtil.parseNonNegativeAmount(request.getParameter("balance"));
 		String accounttype = request.getParameter("accounttype");
 
-		// Why Date.valueOf() specifically: it expects the exact format
-		// "yyyy-MM-dd", which conveniently matches what an HTML
-		// <input type="date"> field sends automatically — no manual parsing needed.
-		Date opendate = Date.valueOf(opendateStr);
-		BigDecimal balance = new BigDecimal(balanceStr);
+		String error = null;
+		if (!ValidationUtil.isValidCid(cid)) {
+			error = "Enter a valid Customer ID (for example CUST0001).";
+		} else if (opendate == null) {
+			error = "Enter a valid open date that is not in the future.";
+		} else if (balance == null) {
+			error = "Enter a valid opening balance of zero or more, with at most 2 decimal places.";
+		} else if (!ValidationUtil.isValidAccountType(accounttype)) {
+			error = "Choose Saving or Current as the account type.";
+		}
 
-		Account account = new Account(cid, opendate, balance, accounttype);
+		if (error != null) {
+			request.setAttribute("success", false);
+			request.setAttribute("errorMessage", error);
+			request.getRequestDispatcher("addAccountResult.jsp").forward(request, response);
+			return;
+		}
 
-		AccountDao dao = new AccountDao();
-		String generatedAccno = dao.addAccount(account);
+		String generatedAccno = new AccountDao().addAccount(new Account(cid, opendate, balance, accounttype));
 
 		request.setAttribute("success", generatedAccno != null);
 		request.setAttribute("generatedAccno", generatedAccno);
-
-		RequestDispatcher dispatcher = request.getRequestDispatcher("addAccountResult.jsp");
-		dispatcher.forward(request, response);
+		request.getRequestDispatcher("addAccountResult.jsp").forward(request, response);
 	}
 }

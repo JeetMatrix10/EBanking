@@ -1,6 +1,7 @@
 package controller.admin;
 
 import java.io.IOException;
+import utilities.ValidationUtil;
 import java.math.BigDecimal;
 
 import javax.servlet.RequestDispatcher;
@@ -17,18 +18,28 @@ public class AdminTransactionServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	        throws ServletException, IOException {
 
-		String accno = request.getParameter("accno");
-		String balanceStr = request.getParameter("balance");
-		BigDecimal newBalance = new BigDecimal(balanceStr);
+	    String accno = request.getParameter("accno");
+	    if (accno != null) {
+	        accno = accno.trim().toUpperCase();
+	    }
+	    // Zero is allowed here (an admin may legitimately zero an account); negatives are not.
+	    BigDecimal newBalance = ValidationUtil.parseNonNegativeAmount(request.getParameter("balance"));
 
-		AccountDao dao = new AccountDao();
-		boolean success = dao.updateAccountBalance(accno, newBalance);
+	    String error = null;
+	    if (!ValidationUtil.isValidAccno(accno)) {
+	        error = "Enter a valid account number (for example ACC00001).";
+	    } else if (newBalance == null) {
+	        error = "Enter a valid balance of zero or more, with at most 2 decimal places.";
+	    }
 
-		request.setAttribute("success", success);
-
-		RequestDispatcher dispatcher = request.getRequestDispatcher("updateAccountResult.jsp");
-		dispatcher.forward(request, response);
+	    if (error != null) {
+	        request.setAttribute("success", false);
+	        request.setAttribute("errorMessage", error);
+	    } else {
+	        request.setAttribute("success", new AccountDao().updateAccountBalance(accno, newBalance));
+	    }
+	    request.getRequestDispatcher("updateAccountResult.jsp").forward(request, response);
 	}
 }

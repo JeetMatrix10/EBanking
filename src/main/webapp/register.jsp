@@ -48,7 +48,7 @@
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" required minlength="8">
         </div>
 
         <button class="btn btn-primary btn-block" type="submit">Register</button>
